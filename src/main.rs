@@ -2,16 +2,19 @@ use serde::{Deserialize};
 use std::io::{Error, ErrorKind};
 
 enum StrengthPotion {
+    NONE,
     STRENGTH,
     SUPERSTRENGTH,
 }
 
 enum AttackPotion {
+    NONE,
     ATTACK,
     SUPERATTACK,
 }
 
 enum AttackPrayer {
+    NONE,
     CLARITY,
     IMPROVED,
     INCREDIBLE,
@@ -20,6 +23,7 @@ enum AttackPrayer {
 }
 
 enum StrengthPrayer {
+    NONE,
     BURST,
     SUPERHUMAN,
     ULTIMATE,
@@ -27,10 +31,13 @@ enum StrengthPrayer {
     PIETY,
 }
 
+#[derive(Deserialize, Debug, Clone)]
+#[serde(rename_all = "lowercase")]
 enum AttackStyle {
     AGGRESSIVE,
     CONTROLLED,
     ACCURATE,
+    DEFENSIVE,
 }
 
 enum SetBonus {
@@ -55,14 +62,19 @@ enum MonsterType {
     UNDEAD,
 }
 
+trait Wep {
+    fn attack_interval(&self) -> f64;
+    fn attack_type(&self) -> &DefenceStyle;
+}
+
 struct WeaponSlot {
     name: String,
-    ticks: f64,
+    ticks: usize,
     defence_style: DefenceStyle,
 }
 
 impl WeaponSlot {
-    pub fn new(name: &str, ticks: f64, defence_style: DefenceStyle) -> Self {
+    pub fn new(name: &str, ticks: usize, defence_style: DefenceStyle) -> Self {
         WeaponSlot {
             name: String::from(name),
             ticks: ticks,
@@ -71,15 +83,25 @@ impl WeaponSlot {
     }
 }
 
+impl Wep for WeaponSlot {
+    fn attack_interval(&self) -> f64 {
+        self.ticks as f64 * 0.6
+    }
+
+    fn attack_type(&self) -> &DefenceStyle {
+        &self.defence_style
+    }
+}
+
 struct Gear {
     set_bonus: SetBonus,
     head: HeadSlot,
     neck: NeckSlot,
-    weapon: WeaponSlot,
+    weapon: Weapon,
 }
 
 impl Gear {
-    pub fn new(set_bonus: SetBonus, head: HeadSlot, neck: NeckSlot, weapon: WeaponSlot) -> Self {
+    pub fn new(set_bonus: SetBonus, head: HeadSlot, neck: NeckSlot, weapon: Weapon) -> Self {
         Gear {
             set_bonus: set_bonus,
             head: head,
@@ -111,7 +133,7 @@ impl Gear {
     }
 
     pub fn attack_interval(&self) -> f64 {
-        self.weapon.ticks * 0.6
+        self.weapon.attack_interval()
     }
 }
 
@@ -185,11 +207,13 @@ impl Player {
             AttackStyle::ACCURATE => 0,
             AttackStyle::AGGRESSIVE => 3,
             AttackStyle::CONTROLLED => 1,
+            AttackStyle::DEFENSIVE => 0,
         }
     }
 
     fn strength_prayer_bonus(&self) -> f64 {
         match &self.strength_prayer {
+            StrengthPrayer::NONE => 1.0,
             StrengthPrayer::BURST => 1.05,
             StrengthPrayer::SUPERHUMAN => 1.1,
             StrengthPrayer::ULTIMATE => 1.15,
@@ -200,6 +224,7 @@ impl Player {
 
     fn strength_potion_bonus(&self) -> usize {
         let bonus = match &self.strength_potion {
+            StrengthPotion::NONE => 0.0,
             StrengthPotion::STRENGTH => self.strength as f64 * 0.1 + 3.0,
             StrengthPotion::SUPERSTRENGTH => self.strength as f64 * 0.15 + 5.0,
         };
@@ -211,11 +236,13 @@ impl Player {
             AttackStyle::ACCURATE => 3,
             AttackStyle::AGGRESSIVE => 0,
             AttackStyle::CONTROLLED => 1,
+            AttackStyle::DEFENSIVE => 0,
         }
     }
 
     fn attack_prayer_bonus(&self) -> f64 {
         match &self.attack_prayer {
+            AttackPrayer::NONE => 1.0,
             AttackPrayer::CLARITY => 1.05,
             AttackPrayer::IMPROVED => 1.1,
             AttackPrayer::INCREDIBLE => 1.15,
@@ -226,6 +253,7 @@ impl Player {
 
     fn attack_potion_bonus(&self) -> usize {
         let bonus = match &self.attack_potion {
+            AttackPotion::NONE => 0.0,
             AttackPotion::ATTACK => self.attack as f64 * 0.1 + 3.0,
             AttackPotion::SUPERATTACK => self.attack as f64 * 0.15 + 5.0,
         };
@@ -268,7 +296,7 @@ impl Player {
 
     pub fn hit_chance(&self, monster: &impl MonsterStuff, on_task: bool) -> f64 {
         let attack = self.max_attack_roll(monster, on_task) as f64;
-        let defence = monster.max_defence_roll(&self.gear.weapon.defence_style) as f64;
+        let defence = monster.max_defence_roll(self.gear.weapon.attack_type()) as f64;
 
         if attack > defence {
             1.0 - (defence + 2.0) / (2.0 * (attack + 1.0))
@@ -278,6 +306,10 @@ impl Player {
     }
 
     pub fn dps(&self, monster: &impl MonsterStuff, on_task: bool) -> f64 {
+        let chance = self.hit_chance(monster, on_task);
+        let max = self.max_hit(monster, on_task);
+        let interval = self.gear.attack_interval();
+        println!("We have {} hit chance with a max of {} with interval of {}", chance, max, interval);
         self.hit_chance(monster, on_task) * (self.max_hit(monster, on_task) as f64 / 2.0) / self.gear.attack_interval()
     }
 }
@@ -287,6 +319,8 @@ trait MonsterStuff {
     fn is_undead(&self) -> bool;
 }
 
+#[derive(Deserialize, Debug, Clone)]
+#[serde(rename_all = "lowercase")]
 enum DefenceStyle {
     STAB,
     SLASH,
@@ -333,16 +367,44 @@ impl MonsterStuff for Monster {
     }
 }
 
+#[derive(Deserialize, Debug, Clone)]
+struct WeaponStance {
+    combat_style: String,
+    attack_type: DefenceStyle,
+    attack_style: AttackStyle,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+struct _Weapon {
+    attack_speed: usize,
+    stances: Vec<WeaponStance>,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+struct Weapon {
+    name: String,
+    weapon: _Weapon,
+}
+
+impl Wep for Weapon {
+    fn attack_interval(&self) -> f64 {
+        self.weapon.attack_speed as f64 * 0.6
+    }
+
+    fn attack_type(&self) -> &DefenceStyle {
+        &self.weapon.stances[0].attack_type
+    }
+}
 
 #[derive(Deserialize, Debug)]
-struct Monsters<T> {
+struct Response<T> {
     _items: Vec<T>,
 }
 
 async fn get_monster(name: &str) -> Result<Monster, Box<dyn std::error::Error>> {
     let monsters = reqwest::get(&format!(r#"https://api.osrsbox.com/monsters?where={{"name":"{}","duplicate": false }}"#, name))
         .await?
-        .json::<Monsters<Monster>>()
+        .json::<Response<Monster>>()
         .await?;
     if monsters._items.len() > 0 {
         Ok(monsters._items[0].clone())
@@ -351,13 +413,32 @@ async fn get_monster(name: &str) -> Result<Monster, Box<dyn std::error::Error>> 
     }
 }
 
+async fn get_weapon(name: &str) -> Result<Weapon, Box<dyn std::error::Error>> {
+    let weapons = reqwest::get(&format!(r#"https://api.osrsbox.com/items?where={{ "name": "{}", "duplicate": false }}"#, name))
+        .await?
+        .json::<Response<Weapon>>()
+        .await?;
+    if weapons._items.len() > 0 {
+        Ok(weapons._items[0].clone())
+    } else {
+        Err(Box::new(Error::new(ErrorKind::InvalidData, "The weapon does not exist..")))
+    }
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let player = Player::new("Supergeni", 97, 99, AttackPotion::SUPERATTACK, 136, AttackPrayer::PIETY,
-                             StrengthPotion::SUPERSTRENGTH, 133, StrengthPrayer::PIETY,
-                             AttackStyle::ACCURATE, Gear::new(SetBonus::NONE, HeadSlot::SLAYER,
-                                                              NeckSlot::NONE, WeaponSlot::new("Abyssal whip", 4.0, DefenceStyle::SLASH)));
-    let abby = get_monster("Mithril dragon").await?;
-    println!("{} has {} DPS against {}", player.name, player.dps(&abby, true), abby.name);
+    let monster_name = "Aberrant spectre";
+    let weapon_name = "Abyssal whip";
+    let weapon = get_weapon(weapon_name).await?;
+    let monster = get_monster(monster_name).await?;
+    let player = Player::new("Supergeni", 74, 74, AttackPotion::ATTACK, 132, AttackPrayer::NONE,
+                             StrengthPotion::STRENGTH, 110, StrengthPrayer::NONE,
+                             AttackStyle::CONTROLLED, Gear::new(SetBonus::NONE, HeadSlot::SLAYER,
+                                                              NeckSlot::NONE, weapon));
+
+    // Compared to osrs-genie.com - we have the correct DPS, because the author
+    // of the tool has not divided the max hit by two to get the average hit
+    // resulting in the DPS being double.
+    println!("{} has {} DPS against {}", player.name, player.dps(&monster, true), monster.name);
     Ok(())
 }
