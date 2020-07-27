@@ -1,5 +1,6 @@
 use serde::{Deserialize};
-use std::io::{Error, ErrorKind};
+
+mod store;
 
 #[allow(dead_code)]
 enum StrengthPotion {
@@ -63,16 +64,16 @@ enum NeckSlot {
     NONE,
 }
 
-trait Wep {
-    fn attack_interval(&self) -> f64;
-    fn attack_type(&self) -> &DefenceStyle;
-}
-
 struct Gear {
     set_bonus: SetBonus,
     head: HeadSlot,
     neck: NeckSlot,
     weapon: Weapon,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct Item {
+    name: String,
 }
 
 impl Gear {
@@ -219,7 +220,7 @@ impl Player {
         bonus.floor() as usize
     }
 
-    pub fn max_hit(&self, monster: &impl Enemy, on_task: bool) -> usize {
+    pub fn max_hit(&self, monster: &Monster, on_task: bool) -> usize {
         let hit = 0.5 + self.effective_strength_level() as f64 * (self.strength_equipment_bonus + 64) as f64 / 640.0;
         let after_bonus = match monster.is_undead() {
             false => hit.floor() * self.gear.regular_bonus(on_task),
@@ -228,7 +229,7 @@ impl Player {
         after_bonus.floor() as usize
     }
 
-    pub fn max_attack_roll(&self, monster: &impl Enemy, on_task: bool) -> usize {
+    pub fn max_attack_roll(&self, monster: &Monster, on_task: bool) -> usize {
         let roll = self.effective_attack_level() * (self.attack_equipment_bonus + 64);
         let after_bonus = match monster.is_undead() {
             false => roll as f64 * self.gear.regular_bonus(on_task),
@@ -237,7 +238,7 @@ impl Player {
         after_bonus.floor() as usize
     }
 
-    pub fn hit_chance(&self, monster: &impl Enemy, on_task: bool) -> f64 {
+    pub fn hit_chance(&self, monster: &Monster, on_task: bool) -> f64 {
         let attack = self.max_attack_roll(monster, on_task) as f64;
         let defence = monster.max_defence_roll(self.gear.weapon.attack_type()) as f64;
 
@@ -248,14 +249,9 @@ impl Player {
         }
     }
 
-    pub fn dps(&self, monster: &impl Enemy, on_task: bool) -> f64 {
+    pub fn dps(&self, monster: &Monster, on_task: bool) -> f64 {
         self.hit_chance(monster, on_task) * (self.max_hit(monster, on_task) as f64 / 2.0) / self.gear.attack_interval()
     }
-}
-
-trait Enemy {
-    fn max_defence_roll(&self, defence_style: &DefenceStyle) -> usize;
-    fn is_undead(&self) -> bool;
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -269,7 +265,7 @@ enum DefenceStyle {
 }
 
 #[derive(Deserialize, Debug, Clone)]
-struct Monster {
+pub struct Monster {
     name: String,
     defence_level: usize,
     defence_stab: usize,
@@ -294,9 +290,7 @@ impl Monster {
             DefenceStyle::RANGED => self.defence_ranged,
         }
     }
-}
 
-impl Enemy for Monster {
     fn max_defence_roll(&self, defence_style: &DefenceStyle) -> usize {
         self.effective_defence_level() * (self.defence_equipment_bonus(defence_style) + 64)
     }
@@ -320,12 +314,12 @@ struct _Weapon {
 }
 
 #[derive(Deserialize, Debug, Clone)]
-struct Weapon {
+pub struct Weapon {
     name: String,
     weapon: _Weapon,
 }
 
-impl Wep for Weapon {
+impl Weapon {
     fn attack_interval(&self) -> f64 {
         self.weapon.attack_speed as f64 * 0.6
     }
@@ -335,41 +329,15 @@ impl Wep for Weapon {
     }
 }
 
-#[derive(Deserialize, Debug)]
-struct Response<T> {
-    _items: Vec<T>,
-}
-
-async fn get_monster(name: &str) -> Result<Monster, Box<dyn std::error::Error>> {
-    let monsters = reqwest::get(&format!(r#"https://api.osrsbox.com/monsters?where={{"name":"{}","duplicate": false }}"#, name))
-        .await?
-        .json::<Response<Monster>>()
-        .await?;
-    if monsters._items.len() > 0 {
-        Ok(monsters._items[0].clone())
-    } else {
-        Err(Box::new(Error::new(ErrorKind::InvalidData, "The monster does not exist..")))
-    }
-}
-
-async fn get_weapon(name: &str) -> Result<Weapon, Box<dyn std::error::Error>> {
-    let weapons = reqwest::get(&format!(r#"https://api.osrsbox.com/items?where={{ "name": "{}", "duplicate": false }}"#, name))
-        .await?
-        .json::<Response<Weapon>>()
-        .await?;
-    if weapons._items.len() > 0 {
-        Ok(weapons._items[0].clone())
-    } else {
-        Err(Box::new(Error::new(ErrorKind::InvalidData, "The weapon does not exist..")))
-    }
-}
-
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let monster_name = "Aberrant spectre";
     let weapon_name = "Abyssal whip";
-    let weapon = get_weapon(weapon_name).await?;
-    let monster = get_monster(monster_name).await?;
+
+    let api = store::ApiStore::connect("https://api.osrsbox.com");
+    let weapon = api.get_weapon(weapon_name).await?;
+    let monster = api.get_monster(monster_name).await?;
+
     let player = Player::new("Supergeni", 74, 74, AttackPotion::ATTACK, 132, AttackPrayer::NONE,
                              StrengthPotion::STRENGTH, 110, StrengthPrayer::NONE,
                              AttackStyle::CONTROLLED, Gear::new(SetBonus::NONE, HeadSlot::SLAYER,
@@ -379,5 +347,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // of the tool has not divided the max hit by two to get the average hit
     // resulting in the DPS being double.
     println!("{} has {} DPS against {}", player.name, player.dps(&monster, true), monster.name);
+    println!("Getting the shark: {:#?}", api.get_item("Shark").await?);
+
     Ok(())
 }
