@@ -1,4 +1,5 @@
 use serde::{Deserialize};
+use std::io::{Error, ErrorKind};
 
 enum StrengthPotion {
     STRENGTH,
@@ -343,8 +344,11 @@ async fn get_monster(name: &str) -> Result<Monster, Box<dyn std::error::Error>> 
         .await?
         .json::<Monsters<Monster>>()
         .await?;
-    println!("{:#?}", monsters);
-    Ok(monsters._items[0].clone())
+    if monsters._items.len() > 0 {
+        Ok(monsters._items[0].clone())
+    } else {
+        Err(Box::new(Error::new(ErrorKind::InvalidData, "The monster does not exist..")))
+    }
 }
 
 #[tokio::main]
@@ -353,22 +357,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                              StrengthPotion::SUPERSTRENGTH, 133, StrengthPrayer::PIETY,
                              AttackStyle::ACCURATE, Gear::new(SetBonus::NONE, HeadSlot::SLAYER,
                                                               NeckSlot::NONE, WeaponSlot::new("Abyssal whip", 4.0, DefenceStyle::SLASH)));
-    let abby = get_monster("Steel dragon").await?;
+    let abby = get_monster("Mithril dragon").await?;
     println!("{} has {} DPS against {}", player.name, player.dps(&abby, true), abby.name);
-    let abyss = Enemy::new("Abyssal demon", 135, 20, MonsterType::REGULAR);
-
-    println!("{} can hit: {}", player.name, player.max_hit(&abyss, true));
-    println!("Max attack roll: {}", player.max_attack_roll(&abyss, true));
-
-    println!("{} has max defence roll: {}", abyss.name, abyss.max_defence_roll(&DefenceStyle::SLASH));
-
-    println!("{} has a hit chance of {} against {}", player.name, player.hit_chance(&abyss, true), abyss.name);
-    println!("{} has {} DPS against {}", player.name, player.dps(&abyss, true), abyss.name);
-    let monsters = reqwest::get(&format!(r#"https://api.osrsbox.com/monsters?where={{"name":"{}","duplicate": false }}"#, abyss.name))
-        .await?
-        .json::<Monsters<Monster>>()
-        .await?;
-    let from_api = &monsters._items[0];
-    println!("{} has {} DPS against {}", player.name, player.dps(from_api, true), from_api.name);
     Ok(())
 }
