@@ -249,10 +249,6 @@ impl Player {
     }
 
     pub fn dps(&self, monster: &impl Enemy, on_task: bool) -> f64 {
-        let chance = self.hit_chance(monster, on_task);
-        let max = self.max_hit(monster, on_task);
-        let interval = self.gear.attack_interval();
-        println!("We have {} hit chance with a max of {} with interval of {}", chance, max, interval);
         self.hit_chance(monster, on_task) * (self.max_hit(monster, on_task) as f64 / 2.0) / self.gear.attack_interval()
     }
 }
