@@ -1,3 +1,5 @@
+use serde::{Deserialize};
+
 enum StrengthPotion {
     STRENGTH,
     SUPERSTRENGTH,
@@ -52,20 +54,36 @@ enum MonsterType {
     UNDEAD,
 }
 
+struct WeaponSlot {
+    name: String,
+    ticks: f64,
+    defence_style: DefenceStyle,
+}
+
+impl WeaponSlot {
+    pub fn new(name: &str, ticks: f64, defence_style: DefenceStyle) -> Self {
+        WeaponSlot {
+            name: String::from(name),
+            ticks: ticks,
+            defence_style: defence_style,
+        }
+    }
+}
+
 struct Gear {
     set_bonus: SetBonus,
     head: HeadSlot,
     neck: NeckSlot,
-    weapon_ticks: f64,
+    weapon: WeaponSlot,
 }
 
 impl Gear {
-    pub fn new(set_bonus: SetBonus, head: HeadSlot, neck: NeckSlot, weapon_ticks: f64) -> Self {
+    pub fn new(set_bonus: SetBonus, head: HeadSlot, neck: NeckSlot, weapon: WeaponSlot) -> Self {
         Gear {
             set_bonus: set_bonus,
             head: head,
             neck: neck,
-            weapon_ticks: weapon_ticks,
+            weapon: weapon,
         }
     }
 
@@ -92,7 +110,7 @@ impl Gear {
     }
 
     pub fn attack_interval(&self) -> f64 {
-        self.weapon_ticks * 0.6
+        self.weapon.ticks * 0.6
     }
 }
 
@@ -116,13 +134,15 @@ impl Enemy {
     fn effective_defence_level(&self) -> usize {
         self.defence + 1 + 8
     }
+}
+
+impl MonsterStuff for Enemy {
+    fn max_defence_roll(&self, _defence_style: &DefenceStyle) -> usize {
+        self.effective_defence_level() * (self.defence_equipment_bonus + 64)
+    }
 
     fn is_undead(&self) -> bool {
         self.kind == MonsterType::UNDEAD
-    }
-
-    pub fn max_defence_roll(&self) -> usize {
-        self.effective_defence_level() * (self.defence_equipment_bonus + 64)
     }
 }
 
@@ -227,7 +247,7 @@ impl Player {
         bonus.floor() as usize
     }
 
-    pub fn max_hit(&self, monster: &Enemy, on_task: bool) -> usize {
+    pub fn max_hit(&self, monster: &impl MonsterStuff, on_task: bool) -> usize {
         let hit = 0.5 + self.effective_strength_level() as f64 * (self.strength_equipment_bonus + 64) as f64 / 640.0;
         let after_bonus = match monster.is_undead() {
             false => hit.floor() * self.gear.regular_bonus(on_task),
@@ -236,7 +256,7 @@ impl Player {
         after_bonus.floor() as usize
     }
 
-    pub fn max_attack_roll(&self, monster: &Enemy, on_task: bool) -> usize {
+    pub fn max_attack_roll(&self, monster: &impl MonsterStuff, on_task: bool) -> usize {
         let roll = self.effective_attack_level() * (self.attack_equipment_bonus + 64);
         let after_bonus = match monster.is_undead() {
             false => roll as f64 * self.gear.regular_bonus(on_task),
@@ -245,9 +265,9 @@ impl Player {
         after_bonus.floor() as usize
     }
 
-    pub fn hit_chance(&self, monster: &Enemy, on_task: bool) -> f64 {
+    pub fn hit_chance(&self, monster: &impl MonsterStuff, on_task: bool) -> f64 {
         let attack = self.max_attack_roll(monster, on_task) as f64;
-        let defence = monster.max_defence_roll() as f64;
+        let defence = monster.max_defence_roll(&self.gear.weapon.defence_style) as f64;
 
         if attack > defence {
             1.0 - (defence + 2.0) / (2.0 * (attack + 1.0))
@@ -256,22 +276,99 @@ impl Player {
         }
     }
 
-    pub fn dps(&self, monster: &Enemy, on_task: bool) -> f64 {
+    pub fn dps(&self, monster: &impl MonsterStuff, on_task: bool) -> f64 {
         self.hit_chance(monster, on_task) * (self.max_hit(monster, on_task) as f64 / 2.0) / self.gear.attack_interval()
     }
 }
 
-fn main() {
+trait MonsterStuff {
+    fn max_defence_roll(&self, defence_style: &DefenceStyle) -> usize;
+    fn is_undead(&self) -> bool;
+}
+
+enum DefenceStyle {
+    STAB,
+    SLASH,
+    CRUSH,
+    MAGIC,
+    RANGED,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+struct Monster {
+    name: String,
+    defence_level: usize,
+    defence_stab: usize,
+    defence_slash: usize,
+    defence_crush: usize,
+    defence_magic: usize,
+    defence_ranged: usize,
+    attributes: Vec<String>,
+}
+
+impl Monster {
+    fn effective_defence_level(&self) -> usize {
+        self.defence_level + 1 + 8
+    }
+
+    fn defence_equipment_bonus(&self, defence_style: &DefenceStyle) -> usize {
+        match defence_style {
+            DefenceStyle::STAB => self.defence_stab,
+            DefenceStyle::SLASH => self.defence_slash,
+            DefenceStyle::CRUSH => self.defence_crush,
+            DefenceStyle::MAGIC => self.defence_magic,
+            DefenceStyle::RANGED => self.defence_ranged,
+        }
+    }
+}
+
+impl MonsterStuff for Monster {
+    fn max_defence_roll(&self, defence_style: &DefenceStyle) -> usize {
+        self.effective_defence_level() * (self.defence_equipment_bonus(defence_style) + 64)
+    }
+
+    fn is_undead(&self) -> bool {
+        self.attributes.contains(&String::from("undead"))
+    }
+}
+
+
+#[derive(Deserialize, Debug)]
+struct Monsters<T> {
+    _items: Vec<T>,
+}
+
+async fn get_monster(name: &str) -> Result<Monster, Box<dyn std::error::Error>> {
+    let monsters = reqwest::get(&format!(r#"https://api.osrsbox.com/monsters?where={{"name":"{}","duplicate": false }}"#, name))
+        .await?
+        .json::<Monsters<Monster>>()
+        .await?;
+    println!("{:#?}", monsters);
+    Ok(monsters._items[0].clone())
+}
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let player = Player::new("Supergeni", 97, 99, AttackPotion::SUPERATTACK, 136, AttackPrayer::PIETY,
                              StrengthPotion::SUPERSTRENGTH, 133, StrengthPrayer::PIETY,
-                             AttackStyle::ACCURATE, Gear::new(SetBonus::NONE, HeadSlot::SLAYER, NeckSlot::NONE, 4.0));
-    let abyss = Enemy::new("Abyssal Demon", 135, 20, MonsterType::REGULAR);
+                             AttackStyle::ACCURATE, Gear::new(SetBonus::NONE, HeadSlot::SLAYER,
+                                                              NeckSlot::NONE, WeaponSlot::new("Abyssal whip", 4.0, DefenceStyle::SLASH)));
+    let abby = get_monster("Steel dragon").await?;
+    println!("{} has {} DPS against {}", player.name, player.dps(&abby, true), abby.name);
+    let abyss = Enemy::new("Abyssal demon", 135, 20, MonsterType::REGULAR);
 
     println!("{} can hit: {}", player.name, player.max_hit(&abyss, true));
     println!("Max attack roll: {}", player.max_attack_roll(&abyss, true));
 
-    println!("{} has max defence roll: {}", abyss.name, abyss.max_defence_roll());
+    println!("{} has max defence roll: {}", abyss.name, abyss.max_defence_roll(&DefenceStyle::SLASH));
 
     println!("{} has a hit chance of {} against {}", player.name, player.hit_chance(&abyss, true), abyss.name);
     println!("{} has {} DPS against {}", player.name, player.dps(&abyss, true), abyss.name);
+    let monsters = reqwest::get(&format!(r#"https://api.osrsbox.com/monsters?where={{"name":"{}","duplicate": false }}"#, abyss.name))
+        .await?
+        .json::<Monsters<Monster>>()
+        .await?;
+    let from_api = &monsters._items[0];
+    println!("{} has {} DPS against {}", player.name, player.dps(from_api, true), from_api.name);
+    Ok(())
 }
