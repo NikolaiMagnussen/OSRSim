@@ -1,18 +1,21 @@
 use serde::{Deserialize};
 use std::io::{Error, ErrorKind};
 
+#[allow(dead_code)]
 enum StrengthPotion {
     NONE,
     STRENGTH,
     SUPERSTRENGTH,
 }
 
+#[allow(dead_code)]
 enum AttackPotion {
     NONE,
     ATTACK,
     SUPERATTACK,
 }
 
+#[allow(dead_code)]
 enum AttackPrayer {
     NONE,
     CLARITY,
@@ -22,6 +25,7 @@ enum AttackPrayer {
     PIETY,
 }
 
+#[allow(dead_code)]
 enum StrengthPrayer {
     NONE,
     BURST,
@@ -40,57 +44,28 @@ enum AttackStyle {
     DEFENSIVE,
 }
 
+#[allow(dead_code)]
 enum SetBonus {
     VOID,
     NONE,
 }
 
+#[allow(dead_code)]
 enum HeadSlot {
     SLAYER,
     NONE,
 }
 
+#[allow(dead_code)]
 enum NeckSlot {
     SALVEREGULAR,
     SALVEENHANCED,
     NONE,
 }
 
-#[derive(PartialEq)]
-enum MonsterType {
-    REGULAR,
-    UNDEAD,
-}
-
 trait Wep {
     fn attack_interval(&self) -> f64;
     fn attack_type(&self) -> &DefenceStyle;
-}
-
-struct WeaponSlot {
-    name: String,
-    ticks: usize,
-    defence_style: DefenceStyle,
-}
-
-impl WeaponSlot {
-    pub fn new(name: &str, ticks: usize, defence_style: DefenceStyle) -> Self {
-        WeaponSlot {
-            name: String::from(name),
-            ticks: ticks,
-            defence_style: defence_style,
-        }
-    }
-}
-
-impl Wep for WeaponSlot {
-    fn attack_interval(&self) -> f64 {
-        self.ticks as f64 * 0.6
-    }
-
-    fn attack_type(&self) -> &DefenceStyle {
-        &self.defence_style
-    }
 }
 
 struct Gear {
@@ -134,38 +109,6 @@ impl Gear {
 
     pub fn attack_interval(&self) -> f64 {
         self.weapon.attack_interval()
-    }
-}
-
-struct Enemy {
-    name: String,
-    defence: usize,
-    defence_equipment_bonus: usize,
-    kind: MonsterType,
-}
-
-impl Enemy {
-    pub fn new(name: &str, defence: usize, defence_equipment_bonus: usize, kind: MonsterType) -> Self {
-        Enemy {
-            name: String::from(name),
-            defence: defence,
-            defence_equipment_bonus: defence_equipment_bonus,
-            kind: kind,
-        }
-    }
-
-    fn effective_defence_level(&self) -> usize {
-        self.defence + 1 + 8
-    }
-}
-
-impl MonsterStuff for Enemy {
-    fn max_defence_roll(&self, _defence_style: &DefenceStyle) -> usize {
-        self.effective_defence_level() * (self.defence_equipment_bonus + 64)
-    }
-
-    fn is_undead(&self) -> bool {
-        self.kind == MonsterType::UNDEAD
     }
 }
 
@@ -276,7 +219,7 @@ impl Player {
         bonus.floor() as usize
     }
 
-    pub fn max_hit(&self, monster: &impl MonsterStuff, on_task: bool) -> usize {
+    pub fn max_hit(&self, monster: &impl Enemy, on_task: bool) -> usize {
         let hit = 0.5 + self.effective_strength_level() as f64 * (self.strength_equipment_bonus + 64) as f64 / 640.0;
         let after_bonus = match monster.is_undead() {
             false => hit.floor() * self.gear.regular_bonus(on_task),
@@ -285,7 +228,7 @@ impl Player {
         after_bonus.floor() as usize
     }
 
-    pub fn max_attack_roll(&self, monster: &impl MonsterStuff, on_task: bool) -> usize {
+    pub fn max_attack_roll(&self, monster: &impl Enemy, on_task: bool) -> usize {
         let roll = self.effective_attack_level() * (self.attack_equipment_bonus + 64);
         let after_bonus = match monster.is_undead() {
             false => roll as f64 * self.gear.regular_bonus(on_task),
@@ -294,7 +237,7 @@ impl Player {
         after_bonus.floor() as usize
     }
 
-    pub fn hit_chance(&self, monster: &impl MonsterStuff, on_task: bool) -> f64 {
+    pub fn hit_chance(&self, monster: &impl Enemy, on_task: bool) -> f64 {
         let attack = self.max_attack_roll(monster, on_task) as f64;
         let defence = monster.max_defence_roll(self.gear.weapon.attack_type()) as f64;
 
@@ -305,7 +248,7 @@ impl Player {
         }
     }
 
-    pub fn dps(&self, monster: &impl MonsterStuff, on_task: bool) -> f64 {
+    pub fn dps(&self, monster: &impl Enemy, on_task: bool) -> f64 {
         let chance = self.hit_chance(monster, on_task);
         let max = self.max_hit(monster, on_task);
         let interval = self.gear.attack_interval();
@@ -314,7 +257,7 @@ impl Player {
     }
 }
 
-trait MonsterStuff {
+trait Enemy {
     fn max_defence_roll(&self, defence_style: &DefenceStyle) -> usize;
     fn is_undead(&self) -> bool;
 }
@@ -357,7 +300,7 @@ impl Monster {
     }
 }
 
-impl MonsterStuff for Monster {
+impl Enemy for Monster {
     fn max_defence_roll(&self, defence_style: &DefenceStyle) -> usize {
         self.effective_defence_level() * (self.defence_equipment_bonus(defence_style) + 64)
     }
