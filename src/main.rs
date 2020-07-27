@@ -329,6 +329,13 @@ impl Weapon {
     }
 }
 
+/* What modules to have:
+ * - main (orchestrate everything - for now)
+ * - store (for querying items, via API, parsed file or other way)
+ * - player (for handling everything with an instance of a player)
+ * - simulation (for generating "player instances" for evaulation and comparing results)
+ */
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let monster_name = "Aberrant spectre";
