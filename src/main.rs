@@ -3,8 +3,10 @@ mod store;
 
 #[allow(dead_code)]
 mod player;
-use player::{AttackPotion, AttackPrayer, AttackStyle, StrengthPotion, StrengthPrayer, Gear, SetBonus, HeadSlot, NeckSlot};
-
+use player::{
+    AttackPotion, AttackPrayer, AttackStyle, Gear, HeadSlot, NeckSlot, SetBonus, StrengthPotion,
+    StrengthPrayer,
+};
 
 /* What modules to have:
  * - main (orchestrate everything - for now)
@@ -21,21 +23,35 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let weapon = api.get_weapon(weapon_name).await?;
     let monster = api.get_monster(monster_name).await?;
 
-    let player = player::Player::new("Supergeni", 74, 74, AttackPotion::ATTACK, 132, AttackPrayer::NONE,
-                             StrengthPotion::STRENGTH, 110, StrengthPrayer::NONE,
-                             AttackStyle::CONTROLLED, Gear::new(SetBonus::NONE, HeadSlot::SLAYER,
-                                                              NeckSlot::NONE, weapon));
+    let player = player::Player::new(
+        "Supergeni",
+        74,
+        74,
+        AttackPotion::ATTACK,
+        132,
+        AttackPrayer::NONE,
+        StrengthPotion::STRENGTH,
+        110,
+        StrengthPrayer::NONE,
+        AttackStyle::CONTROLLED,
+        Gear::new(SetBonus::NONE, HeadSlot::SLAYER, NeckSlot::NONE, weapon),
+    );
 
     // Compared to osrs-genie.com - we have the correct DPS, because the author
     // of the tool has not divided the max hit by two to get the average hit
     // resulting in the DPS being double.
-    println!("{} has {} DPS against {}", player.name, player.dps(&monster, true), monster.name);
+    println!(
+        "{} has {} DPS against {}",
+        player.name,
+        player.dps(&monster, true),
+        monster.name
+    );
     println!("Getting the shark: {:#?}", api.get_item("Shark").await?);
 
     /*
      *  Example of using the file store API to fetch information
      *  about weapons, (equipable) items and monsters.
-     *
+     */
     use store::Store;
     let f: store::FileStore = store::Store::connect("osrsbox-db");
     let weapon = f.get_weapon(weapon_name);
@@ -45,7 +61,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("file store weapon: {:#?}", weapon);
     println!("file store monster: {:#?}", monster);
     println!("file store item: {:#?}", item);
-    */
+    //*/
 
     Ok(())
 }

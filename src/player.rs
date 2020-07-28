@@ -1,4 +1,4 @@
-use serde::{Deserialize};
+use serde::Deserialize;
 
 #[allow(dead_code)]
 pub enum StrengthPotion {
@@ -95,7 +95,7 @@ impl Gear {
 
     pub fn regular_bonus(&self, on_task: bool) -> f64 {
         match &self.head {
-            HeadSlot::SLAYER if on_task => 7.0/6.0,
+            HeadSlot::SLAYER if on_task => 7.0 / 6.0,
             _ => 1.0,
         }
     }
@@ -103,7 +103,7 @@ impl Gear {
     pub fn undead_bonus(&self, on_task: bool) -> f64 {
         match &self.neck {
             NeckSlot::SALVEENHANCED => 1.2,
-            NeckSlot::SALVEREGULAR => 7.0/6.0,
+            NeckSlot::SALVEREGULAR => 7.0 / 6.0,
             NeckSlot::NONE => self.regular_bonus(on_task),
         }
     }
@@ -128,9 +128,19 @@ pub struct Player {
 }
 
 impl Player {
-    pub fn new(name: &str, attack: isize, strength: isize, attack_potion: AttackPotion,
-               attack_equipment_bonus: isize, attack_prayer: AttackPrayer, strength_potion: StrengthPotion,
-               strength_equipment_bonus: isize, strength_prayer: StrengthPrayer, attack_style: AttackStyle, gear: Gear) -> Self {
+    pub fn new(
+        name: &str,
+        attack: isize,
+        strength: isize,
+        attack_potion: AttackPotion,
+        attack_equipment_bonus: isize,
+        attack_prayer: AttackPrayer,
+        strength_potion: StrengthPotion,
+        strength_equipment_bonus: isize,
+        strength_prayer: StrengthPrayer,
+        attack_style: AttackStyle,
+        gear: Gear,
+    ) -> Self {
         Player {
             name: String::from(name),
             attack: attack,
@@ -223,7 +233,9 @@ impl Player {
     }
 
     pub fn max_hit(&self, monster: &Monster, on_task: bool) -> isize {
-        let hit = 0.5 + self.effective_strength_level() as f64 * (self.strength_equipment_bonus + 64) as f64 / 640.0;
+        let hit = 0.5
+            + self.effective_strength_level() as f64 * (self.strength_equipment_bonus + 64) as f64
+                / 640.0;
         let after_bonus = match monster.is_undead() {
             false => hit.floor() * self.gear.regular_bonus(on_task),
             true => hit.floor() * self.gear.undead_bonus(on_task),
@@ -252,7 +264,8 @@ impl Player {
     }
 
     pub fn dps(&self, monster: &Monster, on_task: bool) -> f64 {
-        self.hit_chance(monster, on_task) * (self.max_hit(monster, on_task) as f64 / 2.0) / self.gear.attack_interval()
+        self.hit_chance(monster, on_task) * (self.max_hit(monster, on_task) as f64 / 2.0)
+            / self.gear.attack_interval()
     }
 }
 
@@ -292,7 +305,9 @@ impl Monster {
             DefenceStyle::SLASH => self.defence_slash,
             DefenceStyle::CRUSH => self.defence_crush,
             DefenceStyle::RANGED => self.defence_ranged,
-            DefenceStyle::SPELLCASTING | DefenceStyle::DEFENSIVECASTING | DefenceStyle::MAGIC => self.defence_magic,
+            DefenceStyle::SPELLCASTING | DefenceStyle::DEFENSIVECASTING | DefenceStyle::MAGIC => {
+                self.defence_magic
+            }
         }
     }
 
@@ -333,4 +348,3 @@ impl Weapon {
         &self.weapon.stances[0].attack_type.as_ref().unwrap()
     }
 }
-
