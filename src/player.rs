@@ -38,7 +38,7 @@ pub enum StrengthPrayer {
     PIETY,
 }
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone, Copy)]
 #[serde(rename_all = "lowercase")]
 pub enum AttackStyle {
     AGGRESSIVE,
@@ -76,7 +76,7 @@ pub struct Gear {
     set_bonus: SetBonus,
     head: HeadSlot,
     neck: NeckSlot,
-    weapon: Weapon,
+    pub weapon: Weapon,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -133,7 +133,7 @@ pub struct Player {
     strength_prayer: StrengthPrayer,
     strength_equipment_bonus: isize,
     attack_style: AttackStyle,
-    gear: Gear,
+    pub gear: Gear,
 }
 
 impl Player {
@@ -165,14 +165,18 @@ impl Player {
         }
     }
 
-    fn strength_style_bonus(&self) -> isize {
-        match &self.attack_style {
+    fn strength_style_bonus(&self, attack_style: &AttackStyle) -> isize {
+        match attack_style {
             AttackStyle::ACCURATE => 0,
             AttackStyle::AGGRESSIVE => 3,
             AttackStyle::CONTROLLED => 1,
             AttackStyle::DEFENSIVE => 0,
             _ => 0,
         }
+    }
+
+    pub fn weapon_styles(&self) -> Vec<(AttackStyle, DefenceStyle)> {
+        self.gear.weapon.weapon.stances.iter().map(|x| (x.attack_style.unwrap(), x.attack_type.unwrap())).collect()
     }
 
     fn strength_prayer_bonus(&self) -> f64 {
@@ -195,8 +199,8 @@ impl Player {
         bonus.floor() as isize
     }
 
-    fn attack_style_bonus(&self) -> isize {
-        match &self.attack_style {
+    fn attack_style_bonus(&self, attack_style: &AttackStyle) -> isize {
+        match attack_style {
             AttackStyle::ACCURATE => 3,
             AttackStyle::AGGRESSIVE => 0,
             AttackStyle::CONTROLLED => 1,
@@ -225,25 +229,25 @@ impl Player {
         bonus.floor() as isize
     }
 
-    fn effective_strength_level(&self) -> isize {
+    fn effective_strength_level(&self, attack_style: &AttackStyle) -> isize {
         let potion = self.strength + self.strength_potion_bonus();
         let prayer = potion as f64 * self.strength_prayer_bonus();
-        let style = prayer.floor() as isize + self.strength_style_bonus() + 8;
+        let style = prayer.floor() as isize + self.strength_style_bonus(attack_style) + 8;
         let bonus = style as f64 * self.gear.void_bonus();
         bonus.floor() as isize
     }
 
-    fn effective_attack_level(&self) -> isize {
+    fn effective_attack_level(&self, attack_style: &AttackStyle) -> isize {
         let potion = self.attack + self.attack_potion_bonus();
         let prayer = potion as f64 * self.attack_prayer_bonus();
-        let style = prayer.floor() as isize + self.attack_style_bonus() + 8;
+        let style = prayer.floor() as isize + self.attack_style_bonus(attack_style) + 8;
         let bonus = style as f64 * self.gear.void_bonus();
         bonus.floor() as isize
     }
 
-    pub fn max_hit(&self, monster: &Monster, on_task: bool) -> isize {
+    pub fn max_hit(&self, monster: &Monster, on_task: bool, attack_style: &AttackStyle) -> isize {
         let hit = 0.5
-            + self.effective_strength_level() as f64 * (self.strength_equipment_bonus + 64) as f64
+            + self.effective_strength_level(attack_style) as f64 * (self.strength_equipment_bonus + 64) as f64
                 / 640.0;
         let after_bonus = match monster.is_undead() {
             false => hit.floor() * self.gear.regular_bonus(on_task),
@@ -252,8 +256,8 @@ impl Player {
         after_bonus.floor() as isize
     }
 
-    pub fn max_attack_roll(&self, monster: &Monster, on_task: bool) -> isize {
-        let roll = self.effective_attack_level() * (self.attack_equipment_bonus + 64);
+    pub fn max_attack_roll(&self, monster: &Monster, on_task: bool, attack_style: &AttackStyle) -> isize {
+        let roll = self.effective_attack_level(attack_style) * (self.attack_equipment_bonus + 64);
         let after_bonus = match monster.is_undead() {
             false => roll as f64 * self.gear.regular_bonus(on_task),
             true => roll as f64 * self.gear.undead_bonus(on_task),
@@ -261,9 +265,9 @@ impl Player {
         after_bonus.floor() as isize
     }
 
-    pub fn hit_chance(&self, monster: &Monster, on_task: bool) -> f64 {
-        let attack = self.max_attack_roll(monster, on_task) as f64;
-        let defence = monster.max_defence_roll(&self.gear.weapon.attack_type()) as f64;
+    pub fn hit_chance(&self, monster: &Monster, on_task: bool, style: &(AttackStyle, DefenceStyle)) -> f64 {
+        let attack = self.max_attack_roll(monster, on_task, &style.0) as f64;
+        let defence = monster.max_defence_roll(&style.1) as f64;
 
         if attack > defence {
             1.0 - (defence + 2.0) / (2.0 * (attack + 1.0))
@@ -272,13 +276,13 @@ impl Player {
         }
     }
 
-    pub fn dps(&self, monster: &Monster, on_task: bool) -> f64 {
-        self.hit_chance(monster, on_task) * (self.max_hit(monster, on_task) as f64 / 2.0)
+    pub fn dps(&self, monster: &Monster, on_task: bool, style: &(AttackStyle, DefenceStyle)) -> f64 {
+        self.hit_chance(monster, on_task, style) * (self.max_hit(monster, on_task, &style.0) as f64 / 2.0)
             / self.gear.attack_interval()
     }
 }
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone, Copy)]
 #[serde(rename_all = "lowercase")]
 pub enum DefenceStyle {
     STAB,
@@ -330,22 +334,22 @@ impl Monster {
 }
 
 #[derive(Deserialize, Debug, Clone)]
-struct WeaponStance {
+pub struct WeaponStance {
     combat_style: String,
-    attack_type: Option<DefenceStyle>,
-    attack_style: Option<AttackStyle>,
+    pub attack_type: Option<DefenceStyle>,
+    pub attack_style: Option<AttackStyle>,
 }
 
 #[derive(Deserialize, Debug, Clone)]
-struct _Weapon {
-    attack_speed: isize,
-    stances: Vec<WeaponStance>,
+pub struct _Weapon {
+    pub attack_speed: isize,
+    pub stances: Vec<WeaponStance>,
 }
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct Weapon {
-    name: String,
-    weapon: _Weapon,
+    pub name: String,
+    pub weapon: _Weapon,
 }
 
 impl Weapon {
@@ -353,7 +357,7 @@ impl Weapon {
         self.weapon.attack_speed as f64 * 0.6
     }
 
-    fn attack_type(&self) -> &DefenceStyle {
-        &self.weapon.stances[0].attack_type.as_ref().unwrap()
+    fn attack_type(&self, attack_style: usize) -> &DefenceStyle {
+        &self.weapon.stances[attack_style].attack_type.as_ref().unwrap()
     }
 }

@@ -49,7 +49,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!(
         "{} has {} DPS against {}",
         player.name,
-        player.dps(&monster, true),
+        player.dps(&monster, true, player.weapon_styles().first().unwrap()),
         monster.name
     );
     println!("Getting the shark: {:#?}", api.get_item("Shark").await?);
