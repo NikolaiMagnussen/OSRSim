@@ -1,6 +1,7 @@
 use serde::Deserialize;
 
 #[allow(dead_code)]
+#[derive(Debug, Clone)]
 pub enum StrengthPotion {
     NONE,
     STRENGTH,
@@ -8,6 +9,7 @@ pub enum StrengthPotion {
 }
 
 #[allow(dead_code)]
+#[derive(Debug, Clone)]
 pub enum AttackPotion {
     NONE,
     ATTACK,
@@ -15,6 +17,7 @@ pub enum AttackPotion {
 }
 
 #[allow(dead_code)]
+#[derive(Debug, Clone)]
 pub enum AttackPrayer {
     NONE,
     CLARITY,
@@ -25,6 +28,7 @@ pub enum AttackPrayer {
 }
 
 #[allow(dead_code)]
+#[derive(Debug, Clone)]
 pub enum StrengthPrayer {
     NONE,
     BURST,
@@ -46,24 +50,28 @@ pub enum AttackStyle {
 }
 
 #[allow(dead_code)]
+#[derive(Debug, Clone)]
 pub enum SetBonus {
     VOID,
     NONE,
 }
 
 #[allow(dead_code)]
+#[derive(Debug, Clone)]
 pub enum HeadSlot {
     SLAYER,
     NONE,
 }
 
 #[allow(dead_code)]
+#[derive(Debug, Clone)]
 pub enum NeckSlot {
     SALVEREGULAR,
     SALVEENHANCED,
     NONE,
 }
 
+#[derive(Debug, Clone)]
 pub struct Gear {
     set_bonus: SetBonus,
     head: HeadSlot,
@@ -113,6 +121,7 @@ impl Gear {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct Player {
     pub name: String,
     attack: isize,

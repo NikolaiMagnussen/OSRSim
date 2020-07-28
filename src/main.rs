@@ -8,6 +8,9 @@ use player::{
     StrengthPrayer,
 };
 
+#[allow(dead_code)]
+mod simulation;
+
 /* What modules to have:
  * - main (orchestrate everything - for now)
  * - store (for querying items, via API, parsed file or other way)
@@ -36,6 +39,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         AttackStyle::CONTROLLED,
         Gear::new(SetBonus::NONE, HeadSlot::SLAYER, NeckSlot::NONE, weapon),
     );
+
+    let better = simulation::run(player.clone(), &monster);
+    println!("Better player: {:#?}", better);
 
     // Compared to osrs-genie.com - we have the correct DPS, because the author
     // of the tool has not divided the max hit by two to get the average hit
