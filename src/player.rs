@@ -149,21 +149,21 @@ impl _Equipment {
         }
     }
 
-    pub fn attack_bonus(&self, style: &DefenceStyle) -> isize {
+    pub fn attack_bonus(&self, style: &AttackType) -> isize {
         match style {
-            DefenceStyle::STAB => self.attack_stab,
-            DefenceStyle::SLASH => self.attack_slash,
-            DefenceStyle::CRUSH => self.attack_crush,
-            DefenceStyle::RANGED => self.attack_ranged,
-            DefenceStyle::MAGIC | DefenceStyle::SPELLCASTING | DefenceStyle::DEFENSIVECASTING => self.attack_magic,
+            AttackType::STAB => self.attack_stab,
+            AttackType::SLASH => self.attack_slash,
+            AttackType::CRUSH => self.attack_crush,
+            AttackType::RANGED => self.attack_ranged,
+            AttackType::MAGIC | AttackType::SPELLCASTING | AttackType::DEFENSIVECASTING => self.attack_magic,
         }
     }
 
-    pub fn strength_bonus(&self, style: &DefenceStyle) -> isize {
+    pub fn strength_bonus(&self, style: &AttackType) -> isize {
         match style {
-            DefenceStyle::STAB | DefenceStyle::SLASH | DefenceStyle::CRUSH => self.melee_strength,
-            DefenceStyle::RANGED => self.ranged_strength,
-            DefenceStyle::MAGIC | DefenceStyle::SPELLCASTING | DefenceStyle::DEFENSIVECASTING => self.magic_damage,
+            AttackType::STAB | AttackType::SLASH | AttackType::CRUSH => self.melee_strength,
+            AttackType::RANGED => self.ranged_strength,
+            AttackType::MAGIC | AttackType::SPELLCASTING | AttackType::DEFENSIVECASTING => self.magic_damage,
         }
     }
 }
@@ -235,7 +235,7 @@ impl Gear {
         }
     }
 
-    pub fn attack_equipment_bonus(&self, style: &DefenceStyle) -> isize {
+    pub fn attack_equipment_bonus(&self, style: &AttackType) -> isize {
         let bonus: isize = self.equipment
             .values()
             .map(|x: &Equipment| x.equipment.attack_bonus(style))
@@ -243,7 +243,7 @@ impl Gear {
         bonus + self.weapon.equipment.attack_bonus(style)
     }
 
-    pub fn strength_equipment_bonus(&self, style: &DefenceStyle) -> isize {
+    pub fn strength_equipment_bonus(&self, style: &AttackType) -> isize {
         let bonus: isize = self.equipment
             .values()
             .map(|x: &Equipment| x.equipment.strength_bonus(style))
@@ -304,7 +304,7 @@ impl Player {
         }
     }
 
-    pub fn weapon_styles(&self) -> Vec<(AttackStyle, DefenceStyle)> {
+    pub fn weapon_styles(&self) -> Vec<(AttackStyle, AttackType)> {
         self.gear
             .weapon
             .weapon
@@ -380,7 +380,7 @@ impl Player {
         bonus.floor() as isize
     }
 
-    pub fn max_hit(&self, monster: &Monster, on_task: bool, attack_style: &AttackStyle, defence_style: &DefenceStyle) -> isize {
+    pub fn max_hit(&self, monster: &Monster, on_task: bool, attack_style: &AttackStyle, defence_style: &AttackType) -> isize {
         let hit = 0.5
             + self.effective_strength_level(attack_style) as f64
                 * (self.gear.strength_equipment_bonus(&defence_style) + 64) as f64
@@ -397,7 +397,7 @@ impl Player {
         monster: &Monster,
         on_task: bool,
         attack_style: &AttackStyle,
-        defence_style: &DefenceStyle,
+        defence_style: &AttackType,
     ) -> isize {
         let roll = self.effective_attack_level(attack_style) * (self.gear.attack_equipment_bonus(defence_style) + 64);
         let after_bonus = match monster.is_undead() {
@@ -411,7 +411,7 @@ impl Player {
         &self,
         monster: &Monster,
         on_task: bool,
-        style: &(AttackStyle, DefenceStyle),
+        style: &(AttackStyle, AttackType),
     ) -> f64 {
         let attack = self.max_attack_roll(monster, on_task, &style.0, &style.1) as f64;
         let defence = monster.max_defence_roll(&style.1) as f64;
@@ -427,7 +427,7 @@ impl Player {
         &self,
         monster: &Monster,
         on_task: bool,
-        style: &(AttackStyle, DefenceStyle),
+        style: &(AttackStyle, AttackType),
     ) -> f64 {
         self.hit_chance(monster, on_task, style)
             * (self.max_hit(monster, on_task, &style.0, &style.1) as f64 / 2.0)
@@ -437,7 +437,7 @@ impl Player {
 
 #[derive(Deserialize, Debug, Clone, Copy)]
 #[serde(rename_all = "lowercase")]
-pub enum DefenceStyle {
+pub enum AttackType {
     STAB,
     SLASH,
     CRUSH,
@@ -465,19 +465,19 @@ impl Monster {
         self.defence_level + 1 + 8
     }
 
-    fn defence_equipment_bonus(&self, defence_style: &DefenceStyle) -> isize {
+    fn defence_equipment_bonus(&self, defence_style: &AttackType) -> isize {
         match defence_style {
-            DefenceStyle::STAB => self.defence_stab,
-            DefenceStyle::SLASH => self.defence_slash,
-            DefenceStyle::CRUSH => self.defence_crush,
-            DefenceStyle::RANGED => self.defence_ranged,
-            DefenceStyle::SPELLCASTING | DefenceStyle::DEFENSIVECASTING | DefenceStyle::MAGIC => {
+            AttackType::STAB => self.defence_stab,
+            AttackType::SLASH => self.defence_slash,
+            AttackType::CRUSH => self.defence_crush,
+            AttackType::RANGED => self.defence_ranged,
+            AttackType::SPELLCASTING | AttackType::DEFENSIVECASTING | AttackType::MAGIC => {
                 self.defence_magic
             }
         }
     }
 
-    fn max_defence_roll(&self, defence_style: &DefenceStyle) -> isize {
+    fn max_defence_roll(&self, defence_style: &AttackType) -> isize {
         self.effective_defence_level() * (self.defence_equipment_bonus(defence_style) + 64)
     }
 
@@ -489,7 +489,7 @@ impl Monster {
 #[derive(Deserialize, Debug, Clone)]
 pub struct WeaponStance {
     combat_style: String,
-    pub attack_type: Option<DefenceStyle>,
+    pub attack_type: Option<AttackType>,
     pub attack_style: Option<AttackStyle>,
 }
 
@@ -506,17 +506,17 @@ impl Default for _Weapon {
             stances: vec![
                 WeaponStance {
                     combat_style: String::from("kick"),
-                    attack_type: Some(DefenceStyle::CRUSH),
+                    attack_type: Some(AttackType::CRUSH),
                     attack_style: Some(AttackStyle::AGGRESSIVE),
                 },
                 WeaponStance {
                     combat_style: String::from("punch"),
-                    attack_type: Some(DefenceStyle::CRUSH),
+                    attack_type: Some(AttackType::CRUSH),
                     attack_style: Some(AttackStyle::ACCURATE),
                 },
                 WeaponStance {
                     combat_style: String::from("block"),
-                    attack_type: Some(DefenceStyle::CRUSH),
+                    attack_type: Some(AttackType::CRUSH),
                     attack_style: Some(AttackStyle::DEFENSIVE),
                 },
             ],
@@ -546,7 +546,7 @@ impl Weapon {
         self.weapon.attack_speed as f64 * 0.6
     }
 
-    fn attack_type(&self, attack_style: usize) -> &DefenceStyle {
+    fn attack_type(&self, attack_style: usize) -> &AttackType {
         &self.weapon.stances[attack_style]
             .attack_type
             .as_ref()

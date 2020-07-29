@@ -1,6 +1,6 @@
 #[allow(dead_code)]
 use crate::player::{
-    AttackStyle, DefenceStyle, Gear, Monster,
+    AttackStyle, AttackType, Gear, Monster,
     Player, SpareGear,
 };
 
@@ -9,8 +9,8 @@ struct Simulation {
     spare_equipment: SpareGear,
 }
 
-pub fn run_attack_styles(base: &Player, monster: &Monster) -> (f64, (AttackStyle, DefenceStyle)) {
-    let mut a: Vec<(f64, (AttackStyle, DefenceStyle))> = base
+pub fn run_attack_styles(base: &Player, monster: &Monster) -> (f64, (AttackStyle, AttackType)) {
+    let mut a: Vec<(f64, (AttackStyle, AttackType))> = base
         .weapon_styles()
         .iter()
         .map(|x| (base.dps(monster, true, x), x.clone()))
@@ -20,10 +20,10 @@ pub fn run_attack_styles(base: &Player, monster: &Monster) -> (f64, (AttackStyle
     a.first().unwrap().clone()
 }
 
-pub fn run(base: Player, monster: &Monster) -> (Player, (f64, (AttackStyle, DefenceStyle))) {
+pub fn run(base: Player, monster: &Monster) -> (Player, (f64, (AttackStyle, AttackType))) {
     let mut player = base.clone();
 
-    let mut style: (f64, (AttackStyle, DefenceStyle)) = run_attack_styles(&player, monster);
+    let mut style: (f64, (AttackStyle, AttackType)) = run_attack_styles(&player, monster);
     let mut best_style = style;
     for equipment in &base.spare_equipment.spare_equipment {
         let mut player_tmp = player.clone();
