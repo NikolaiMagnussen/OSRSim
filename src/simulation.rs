@@ -16,8 +16,10 @@ pub fn run_attack_styles(base: &Player, monster: &Monster) -> (f64, (AttackStyle
 }
 
 pub fn run(base: Player, monster: &Monster) -> Player {
-    let style = run_attack_styles(&base, monster);
-    println!("The best style is: {:#?}", style);
+    let mut player = base.clone();
+    let style: (f64, (AttackStyle, DefenceStyle)) = run_attack_styles(&base, monster);
 
-    base
+    player.attack_style = (style.1).0;
+
+    player
 }

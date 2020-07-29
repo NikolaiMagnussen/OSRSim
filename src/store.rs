@@ -1,4 +1,4 @@
-use crate::player::{Item, Monster, Weapon};
+use crate::player::{Equipment, Monster, Weapon};
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::fs::File;
@@ -7,7 +7,7 @@ use std::io::{BufReader, Error, ErrorKind};
 pub trait Store {
     fn connect(path: &str) -> Self;
     fn get_weapon(&self, name: &str) -> Option<&Weapon>;
-    fn get_item(&self, name: &str) -> Option<&Item>;
+    fn get_item(&self, name: &str) -> Option<&Equipment>;
     fn get_monster(&self, name: &str) -> Option<&Monster>;
 }
 
@@ -15,7 +15,7 @@ pub trait Store {
 pub struct FileStore {
     path: String,
     weapons: HashMap<String, Weapon>,
-    items: HashMap<String, Item>,
+    items: HashMap<String, Equipment>,
     monsters: HashMap<String, Monster>,
 }
 
@@ -54,13 +54,13 @@ impl ApiStore {
         }
     }
 
-    pub async fn get_item(&self, name: &str) -> Result<Item, Box<dyn std::error::Error>> {
+    pub async fn get_item(&self, name: &str) -> Result<Equipment, Box<dyn std::error::Error>> {
         let items = reqwest::get(&format!(
             r#"{}/items?where={{ "name": "{}", "duplicate": false }}"#,
             self.path, name
         ))
         .await?
-        .json::<Response<Item>>()
+        .json::<Response<Equipment>>()
         .await?;
 
         if items._items.len() > 0 {
@@ -149,7 +149,7 @@ impl Store for FileStore {
         self.weapons.get(name)
     }
 
-    fn get_item(&self, name: &str) -> Option<&Item> {
+    fn get_item(&self, name: &str) -> Option<&Equipment> {
         self.items.get(name)
     }
 

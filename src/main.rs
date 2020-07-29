@@ -1,9 +1,11 @@
 use serde::Deserialize;
+
 use std::fs::File;
 use std::io::BufReader;
 
 #[allow(dead_code)]
 mod store;
+use store::Store;
 
 #[allow(dead_code)]
 mod player;
@@ -16,6 +18,33 @@ use player::{
 mod simulation;
 
 #[derive(Deserialize, Debug, Clone)]
+struct ParsedOneHand {
+    weapon: String,
+    shield: String,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+#[serde(rename_all = "lowercase")]
+enum ParsedWeapon {
+    ONEHAND(ParsedOneHand),
+    TWOHAND(String),
+}
+
+#[derive(Deserialize, Debug, Clone)]
+struct ParsedEquipment {
+    ring: String,
+    feet: String,
+    hands: String,
+    neck: String,
+    ammo: String,
+    cape: String,
+    body: String,
+    legs: String,
+    head: String,
+    weapon: ParsedWeapon,
+}
+
+#[derive(Deserialize, Debug, Clone)]
 struct ParsedFile {
     player_name: String,
     attack_level: isize,
@@ -25,6 +54,7 @@ struct ParsedFile {
     weapon_name: String,
     slayer_helm: bool,
     monster_name: String,
+    equipment: ParsedEquipment,
 }
 
 fn load_player(
@@ -34,8 +64,11 @@ fn load_player(
     let file = File::open(filename).ok()?;
     let reader = BufReader::new(file);
     let parsed_file: ParsedFile = serde_json::from_reader(reader).ok()?;
+
+    println!("Parsed player: {:#?}", parsed_file);
+
     let weapon = api.get_weapon(&parsed_file.weapon_name)?;
-    let player = player::Player::new(
+    let mut player = player::Player::new(
         &parsed_file.player_name,
         parsed_file.attack_level,
         parsed_file.strength_level,
@@ -53,6 +86,23 @@ fn load_player(
             weapon.clone(),
         ),
     );
+    player.gear.add_equipment(api.get_item(&parsed_file.equipment.ring));
+    player.gear.add_equipment(api.get_item(&parsed_file.equipment.feet));
+    player.gear.add_equipment(api.get_item(&parsed_file.equipment.hands));
+    player.gear.add_equipment(api.get_item(&parsed_file.equipment.neck));
+    player.gear.add_equipment(api.get_item(&parsed_file.equipment.ammo));
+    player.gear.add_equipment(api.get_item(&parsed_file.equipment.cape));
+    player.gear.add_equipment(api.get_item(&parsed_file.equipment.body));
+    player.gear.add_equipment(api.get_item(&parsed_file.equipment.legs));
+    player.gear.add_equipment(api.get_item(&parsed_file.equipment.head));
+    match parsed_file.equipment.weapon {
+        ParsedWeapon::TWOHAND(twohand) => player.gear.add_equipment(api.get_item(&twohand)),
+        ParsedWeapon::ONEHAND(onehand) => {
+            player.gear.add_equipment(api.get_item(&onehand.shield));
+            player.gear.add_weapon(api.get_weapon(&onehand.weapon));
+        },
+    };
+
     let monster = api.get_monster(&parsed_file.monster_name)?;
     Some((player, monster.clone()))
 }
@@ -110,8 +160,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("Store loaded..");
     if let Some((player, monster)) = load_player("./loadout.json", &api) {
+        println!("Loaded player: {:#?}", player);
         let better = simulation::run(player, &monster);
         println!("Better player: {:#?}", better);
+    } else {
+        println!("Unable to parse loadout :(");
     }
 
     Ok(())

@@ -1,4 +1,7 @@
 use serde::Deserialize;
+use std::collections::HashMap;
+use std::cmp::{Eq, PartialEq};
+use std::hash::Hash;
 
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
@@ -77,11 +80,53 @@ pub struct Gear {
     head: HeadSlot,
     neck: NeckSlot,
     pub weapon: Weapon,
+    equipment: HashMap<EquipmentSlot, Equipment>,
+}
+
+#[derive(Deserialize, Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[serde(rename_all = "lowercase")]
+pub enum EquipmentSlot {
+    RING,
+    FEET,
+    HANDS,
+    NECK,
+    AMMO,
+    CAPE,
+    BODY,
+    LEGS,
+    HEAD,
+    SHIELD,
 }
 
 #[derive(Deserialize, Debug, Clone)]
-pub struct Item {
+pub enum WeaponSlot {
+    TWOHAND(Weapon),
+    ONEHAND(Weapon, Equipment),
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct _Equipment {
+    attack_stab: isize,
+    attack_slash: isize,
+    attack_crush: isize,
+    attack_magic: isize,
+    attack_ranged: isize,
+    defence_stab: isize,
+    defence_slash: isize,
+    defence_crush: isize,
+    defence_magic: isize,
+    defence_ranged: isize,
+    melee_strength: isize,
+    ranged_strength: isize,
+    magic_damage: isize,
+    prayer: isize,
+    slot: EquipmentSlot,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct Equipment {
     name: String,
+    equipment: _Equipment,
 }
 
 impl Gear {
@@ -91,6 +136,19 @@ impl Gear {
             head: head,
             neck: neck,
             weapon: weapon,
+            equipment: HashMap::new(),
+        }
+    }
+
+    pub fn add_equipment(&mut self, equipment: Option<&Equipment>) {
+        if let Some(equipment) = equipment {
+            self.equipment.insert(equipment.equipment.slot, equipment.clone());
+        }
+    }
+
+    pub fn add_weapon(&mut self, weapon: Option<&Weapon>) {
+        if let Some(weapon) = weapon {
+            self.weapon = weapon.clone();
         }
     }
 
@@ -132,7 +190,7 @@ pub struct Player {
     strength_potion: StrengthPotion,
     strength_prayer: StrengthPrayer,
     strength_equipment_bonus: isize,
-    attack_style: AttackStyle,
+    pub attack_style: AttackStyle,
     pub gear: Gear,
 }
 
