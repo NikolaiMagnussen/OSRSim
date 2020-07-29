@@ -37,14 +37,8 @@ fn load_player(filename: &str, api: &impl store::Store) -> Option<(player::Playe
     Some((player, monster.clone()))
 }
 
-/* What modules to have:
- * - main (orchestrate everything - for now)
- * - store (for querying items, via API, parsed file or other way)
- * - player (for handling everything with an instance of a player)
- * - simulation (for generating "player instances" for evaulation and comparing results)
- */
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+#[allow(dead_code)]
+async fn do_hardcoded() -> Result<(), Box<dyn std::error::Error>> {
     let monster_name = "Aberrant spectre";
     let weapon_name = "Abyssal whip";
 
@@ -66,13 +60,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Gear::new(SetBonus::NONE, HeadSlot::SLAYER, NeckSlot::NONE, weapon),
     );
 
-    use store::Store;
-    let f: store::FileStore = store::Store::connect("osrsbox-db");
-    if let Some((p, m)) = load_player("./loadout.json", &f) {
-        let better = simulation::run(p, &m);
-        println!("Better player: {:#?}", better);
-    }
-
     let better = simulation::run(player.clone(), &monster);
     println!("Better player: {:#?}", better);
 
@@ -87,18 +74,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
     println!("Getting the shark: {:#?}", api.get_item("Shark").await?);
 
-    /*
-     *  Example of using the file store API to fetch information
-     *  about weapons, (equipable) items and monsters.
-     */
-    let weapon = f.get_weapon(weapon_name);
-    let monster = f.get_monster(monster_name);
-    let item = f.get_item("Dragon chainbody");
+    Ok(())
+}
 
-    println!("file store weapon: {:#?}", weapon);
-    println!("file store monster: {:#?}", monster);
-    println!("file store item: {:#?}", item);
-    //*/
+/* What modules to have:
+ * - main (orchestrate everything - for now)
+ * - store (for querying items, via API, parsed file or other way)
+ * - player (for handling everything with an instance of a player)
+ * - simulation (for generating "player instances" for evaulation and comparing results)
+ */
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let f: store::FileStore = store::Store::connect("osrsbox-db");
+    if let Some((p, m)) = load_player("./loadout.json", &f) {
+        let better = simulation::run(p, &m);
+        println!("Better player: {:#?}", better);
+    }
 
     Ok(())
 }
