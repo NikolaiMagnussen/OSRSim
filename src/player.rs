@@ -176,7 +176,13 @@ impl Player {
     }
 
     pub fn weapon_styles(&self) -> Vec<(AttackStyle, DefenceStyle)> {
-        self.gear.weapon.weapon.stances.iter().map(|x| (x.attack_style.unwrap(), x.attack_type.unwrap())).collect()
+        self.gear
+            .weapon
+            .weapon
+            .stances
+            .iter()
+            .map(|x| (x.attack_style.unwrap(), x.attack_type.unwrap()))
+            .collect()
     }
 
     fn strength_prayer_bonus(&self) -> f64 {
@@ -247,7 +253,8 @@ impl Player {
 
     pub fn max_hit(&self, monster: &Monster, on_task: bool, attack_style: &AttackStyle) -> isize {
         let hit = 0.5
-            + self.effective_strength_level(attack_style) as f64 * (self.strength_equipment_bonus + 64) as f64
+            + self.effective_strength_level(attack_style) as f64
+                * (self.strength_equipment_bonus + 64) as f64
                 / 640.0;
         let after_bonus = match monster.is_undead() {
             false => hit.floor() * self.gear.regular_bonus(on_task),
@@ -256,7 +263,12 @@ impl Player {
         after_bonus.floor() as isize
     }
 
-    pub fn max_attack_roll(&self, monster: &Monster, on_task: bool, attack_style: &AttackStyle) -> isize {
+    pub fn max_attack_roll(
+        &self,
+        monster: &Monster,
+        on_task: bool,
+        attack_style: &AttackStyle,
+    ) -> isize {
         let roll = self.effective_attack_level(attack_style) * (self.attack_equipment_bonus + 64);
         let after_bonus = match monster.is_undead() {
             false => roll as f64 * self.gear.regular_bonus(on_task),
@@ -265,7 +277,12 @@ impl Player {
         after_bonus.floor() as isize
     }
 
-    pub fn hit_chance(&self, monster: &Monster, on_task: bool, style: &(AttackStyle, DefenceStyle)) -> f64 {
+    pub fn hit_chance(
+        &self,
+        monster: &Monster,
+        on_task: bool,
+        style: &(AttackStyle, DefenceStyle),
+    ) -> f64 {
         let attack = self.max_attack_roll(monster, on_task, &style.0) as f64;
         let defence = monster.max_defence_roll(&style.1) as f64;
 
@@ -276,8 +293,14 @@ impl Player {
         }
     }
 
-    pub fn dps(&self, monster: &Monster, on_task: bool, style: &(AttackStyle, DefenceStyle)) -> f64 {
-        self.hit_chance(monster, on_task, style) * (self.max_hit(monster, on_task, &style.0) as f64 / 2.0)
+    pub fn dps(
+        &self,
+        monster: &Monster,
+        on_task: bool,
+        style: &(AttackStyle, DefenceStyle),
+    ) -> f64 {
+        self.hit_chance(monster, on_task, style)
+            * (self.max_hit(monster, on_task, &style.0) as f64 / 2.0)
             / self.gear.attack_interval()
     }
 }
@@ -358,6 +381,9 @@ impl Weapon {
     }
 
     fn attack_type(&self, attack_style: usize) -> &DefenceStyle {
-        &self.weapon.stances[attack_style].attack_type.as_ref().unwrap()
+        &self.weapon.stances[attack_style]
+            .attack_type
+            .as_ref()
+            .unwrap()
     }
 }

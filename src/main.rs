@@ -27,12 +27,32 @@ struct ParsedFile {
     monster_name: String,
 }
 
-fn load_player(filename: &str, api: &impl store::Store) -> Option<(player::Player, player::Monster)> {
+fn load_player(
+    filename: &str,
+    api: &impl store::Store,
+) -> Option<(player::Player, player::Monster)> {
     let file = File::open(filename).ok()?;
     let reader = BufReader::new(file);
     let parsed_file: ParsedFile = serde_json::from_reader(reader).ok()?;
     let weapon = api.get_weapon(&parsed_file.weapon_name)?;
-    let player = player::Player::new(&parsed_file.player_name, parsed_file.attack_level, parsed_file.strength_level, AttackPotion::NONE, parsed_file.attack_bonus, AttackPrayer::NONE, StrengthPotion::NONE, parsed_file.strength_bonus, StrengthPrayer::NONE, AttackStyle::ACCURATE, Gear::new(SetBonus::NONE, HeadSlot::SLAYER, NeckSlot::NONE, weapon.clone()));
+    let player = player::Player::new(
+        &parsed_file.player_name,
+        parsed_file.attack_level,
+        parsed_file.strength_level,
+        AttackPotion::NONE,
+        parsed_file.attack_bonus,
+        AttackPrayer::NONE,
+        StrengthPotion::NONE,
+        parsed_file.strength_bonus,
+        StrengthPrayer::NONE,
+        AttackStyle::ACCURATE,
+        Gear::new(
+            SetBonus::NONE,
+            HeadSlot::SLAYER,
+            NeckSlot::NONE,
+            weapon.clone(),
+        ),
+    );
     let monster = api.get_monster(&parsed_file.monster_name)?;
     Some((player, monster.clone()))
 }

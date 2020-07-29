@@ -1,11 +1,12 @@
 #[allow(dead_code)]
 use crate::player::{
-    AttackPotion, AttackPrayer, AttackStyle, Gear, HeadSlot, NeckSlot, SetBonus, StrengthPotion,
-    StrengthPrayer, Monster, Player, DefenceStyle,
+    AttackPotion, AttackPrayer, AttackStyle, DefenceStyle, Gear, HeadSlot, Monster, NeckSlot,
+    Player, SetBonus, StrengthPotion, StrengthPrayer,
 };
 
 pub fn run_attack_styles(base: &Player, monster: &Monster) -> (f64, (AttackStyle, DefenceStyle)) {
-    let mut a: Vec<(f64, (AttackStyle, DefenceStyle))> = base.weapon_styles()
+    let mut a: Vec<(f64, (AttackStyle, DefenceStyle))> = base
+        .weapon_styles()
         .iter()
         .map(|x| (base.dps(monster, true, x), x.clone()))
         .collect();
