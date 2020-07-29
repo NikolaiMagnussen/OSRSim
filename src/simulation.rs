@@ -1,16 +1,81 @@
-#[allow(dead_code)]
-use crate::player::{AttackStyle, AttackType, Gear, Monster, Player, SpareGear};
+use std::collections::HashSet;
+
+use crate::player::{
+    AttackStyle, AttackType, Equipment, EquipmentSlot, Gear, Monster, Player, SpareGear, Weapon,
+};
 
 pub struct Simulation {
     gear: Gear,
+    original_gear: Gear,
     spare_equipment: SpareGear,
+    ammo: HashSet<Equipment>,
+    body: HashSet<Equipment>,
+    cape: HashSet<Equipment>,
+    feet: HashSet<Equipment>,
+    head: HashSet<Equipment>,
+    legs: HashSet<Equipment>,
+    neck: HashSet<Equipment>,
+    ring: HashSet<Equipment>,
+    hands: HashSet<Equipment>,
+    shield: HashSet<Equipment>,
+    weapon: HashSet<Weapon>,
+    twohand: HashSet<Weapon>,
 }
 
 impl Simulation {
     pub fn new(gear: &Gear, spare_equipment: &SpareGear) -> Self {
         Simulation {
             gear: gear.clone(),
+            original_gear: gear.clone(),
             spare_equipment: spare_equipment.clone(),
+            ammo: HashSet::new(),
+            body: HashSet::new(),
+            cape: HashSet::new(),
+            feet: HashSet::new(),
+            head: HashSet::new(),
+            legs: HashSet::new(),
+            neck: HashSet::new(),
+            ring: HashSet::new(),
+            hands: HashSet::new(),
+            shield: HashSet::new(),
+            weapon: HashSet::new(),
+            twohand: HashSet::new(),
+        }
+    }
+
+    pub fn get_gear(&self) -> &Gear {
+        &self.gear
+    }
+
+    pub fn next_gear(&mut self) {
+        for (k, v) in self.gear.equipment.iter() {
+            match k {
+                EquipmentSlot::AMMO => self.ammo.insert(v.clone()),
+                EquipmentSlot::BODY => self.body.insert(v.clone()),
+                EquipmentSlot::CAPE => self.cape.insert(v.clone()),
+                EquipmentSlot::FEET => self.feet.insert(v.clone()),
+                EquipmentSlot::HEAD => self.head.insert(v.clone()),
+                EquipmentSlot::LEGS => self.legs.insert(v.clone()),
+                EquipmentSlot::NECK => self.neck.insert(v.clone()),
+                EquipmentSlot::RING => self.ring.insert(v.clone()),
+                EquipmentSlot::HANDS => self.hands.insert(v.clone()),
+                EquipmentSlot::SHIELD => self.shield.insert(v.clone()),
+                _ => true,
+            };
+        }
+
+        match &self.gear.weapon.equipment.slot {
+            EquipmentSlot::WEAPON => self.weapon.insert(self.gear.weapon.clone()),
+            EquipmentSlot::TWOHAND => self.twohand.insert(self.gear.weapon.clone()),
+            _ => true,
+        };
+
+        for v in &self.spare_equipment.spare_weapons {
+            match &v.equipment.slot {
+                EquipmentSlot::WEAPON => self.weapon.insert(v.clone()),
+                EquipmentSlot::TWOHAND => self.twohand.insert(v.clone()),
+                _ => true,
+            };
         }
     }
 }

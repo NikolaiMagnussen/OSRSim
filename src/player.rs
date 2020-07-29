@@ -41,7 +41,7 @@ pub enum StrengthPrayer {
     PIETY,
 }
 
-#[derive(Deserialize, Debug, Clone, Copy)]
+#[derive(Deserialize, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[serde(rename_all = "lowercase")]
 pub enum AttackStyle {
     AGGRESSIVE,
@@ -109,7 +109,7 @@ pub enum WeaponSlot {
     ONEHAND(Weapon, Equipment),
 }
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct _Equipment {
     attack_stab: isize,
     attack_slash: isize,
@@ -125,7 +125,7 @@ pub struct _Equipment {
     ranged_strength: isize,
     magic_damage: isize,
     prayer: isize,
-    slot: EquipmentSlot,
+    pub slot: EquipmentSlot,
 }
 
 impl _Equipment {
@@ -172,10 +172,10 @@ impl _Equipment {
     }
 }
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Equipment {
-    name: String,
-    equipment: _Equipment,
+    pub name: String,
+    pub equipment: _Equipment,
 }
 
 impl Gear {
@@ -444,7 +444,7 @@ impl Player {
     }
 }
 
-#[derive(Deserialize, Debug, Clone, Copy)]
+#[derive(Deserialize, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[serde(rename_all = "lowercase")]
 pub enum AttackType {
     STAB,
@@ -495,14 +495,14 @@ impl Monster {
     }
 }
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct WeaponStance {
     combat_style: String,
     pub attack_type: Option<AttackType>,
     pub attack_style: Option<AttackStyle>,
 }
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct _Weapon {
     pub attack_speed: isize,
     pub stances: Vec<WeaponStance>,
@@ -533,7 +533,7 @@ impl Default for _Weapon {
     }
 }
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Weapon {
     pub name: String,
     pub weapon: _Weapon,
