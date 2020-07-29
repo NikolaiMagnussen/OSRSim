@@ -50,6 +50,7 @@ struct ParsedFile {
     strength_level: isize,
     monster_name: String,
     equipment: ParsedEquipment,
+    spare_equipment: Vec<String>,
 }
 
 fn load_player(
@@ -59,6 +60,7 @@ fn load_player(
     let file = File::open(filename).ok()?;
     let reader = BufReader::new(file);
     let parsed_file: ParsedFile = serde_json::from_reader(reader).ok()?;
+    println!("Parsed file: {:#?}", parsed_file);
 
     let mut player = player::Player::new(
         &parsed_file.player_name,
@@ -87,6 +89,13 @@ fn load_player(
             player.gear.add_weapon(api.get_weapon(&onehand.weapon));
         },
     };
+
+    for equipment in parsed_file.spare_equipment {
+        player.spare_equipment.add_weapon(api.get_weapon(&equipment));
+        player.spare_equipment.add_equipment(api.get_item(&equipment));
+    }
+
+    println!("Parsed player: {:#?}", player);
 
     let monster = api.get_monster(&parsed_file.monster_name)?;
     Some((player, monster.clone()))

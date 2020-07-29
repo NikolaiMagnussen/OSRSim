@@ -58,6 +58,33 @@ pub struct Gear {
     pub equipment: HashMap<EquipmentSlot, Equipment>,
 }
 
+#[derive(Debug, Clone)]
+pub struct SpareGear {
+    spare_weapons: Vec<Weapon>,
+    spare_equipment: Vec<Equipment>,
+}
+
+impl SpareGear {
+    pub fn new() -> Self {
+        SpareGear {
+            spare_weapons: Vec::new(),
+            spare_equipment: Vec::new(),
+        }
+    }
+
+    pub fn add_weapon(&mut self, weapon: Option<&Weapon>) {
+        if let Some(weapon) = weapon {
+            self.spare_weapons.push(weapon.clone());
+        }
+    }
+
+    pub fn add_equipment(&mut self, equipment: Option<&Equipment>) {
+        if let Some(equipment) = equipment {
+            self.spare_equipment.push(equipment.clone());
+        }
+    }
+}
+
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[serde(rename_all = "lowercase")]
 pub enum EquipmentSlot {
@@ -241,6 +268,7 @@ pub struct Player {
     strength_prayer: StrengthPrayer,
     pub attack_style: AttackStyle,
     pub gear: Gear,
+    pub spare_equipment: SpareGear,
 }
 
 impl Player {
@@ -265,6 +293,7 @@ impl Player {
             strength_prayer: strength_prayer,
             attack_style: attack_style,
             gear: gear,
+            spare_equipment: SpareGear::new(),
         }
     }
 
