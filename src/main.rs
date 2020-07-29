@@ -65,8 +65,6 @@ fn load_player(
     let reader = BufReader::new(file);
     let parsed_file: ParsedFile = serde_json::from_reader(reader).ok()?;
 
-    println!("Parsed player: {:#?}", parsed_file);
-
     let weapon = api.get_weapon(&parsed_file.weapon_name)?;
     let mut player = player::Player::new(
         &parsed_file.player_name,

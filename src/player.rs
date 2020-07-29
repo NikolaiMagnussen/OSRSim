@@ -153,24 +153,41 @@ impl Gear {
     }
 
     pub fn void_bonus(&self) -> f64 {
-        match &self.set_bonus {
-            SetBonus::NONE => 1.0,
-            SetBonus::VOID => 1.1,
+        let head = self.equipment.get(&EquipmentSlot::HEAD);
+        let body = self.equipment.get(&EquipmentSlot::BODY);
+        let legs = self.equipment.get(&EquipmentSlot::LEGS);
+        let hands = self.equipment.get(&EquipmentSlot::HANDS);
+        match (head, body, legs, hands) {
+            (Some(head), Some(body), Some(legs), Some(hands)) if
+                (head.name == "Void melee helm"
+                 || head.name == "Void ranger helm"
+                 || head.name == "Void mage helm")
+                && body.name == "Void knight top"
+                && legs.name == "Void knight robe"
+                && hands.name == "Void knight gloves" => 1.1,
+            _ => 1.0,
         }
     }
 
     pub fn regular_bonus(&self, on_task: bool) -> f64 {
-        match &self.head {
-            HeadSlot::SLAYER if on_task => 7.0 / 6.0,
+        match self.equipment.get(&EquipmentSlot::HEAD) {
+            Some(head) if
+                (head.name == "Slayer helmet"
+                 || head.name == "Slayer helmet (i)")
+                && on_task => 7.0 / 6.0,
             _ => 1.0,
         }
     }
 
     pub fn undead_bonus(&self, on_task: bool) -> f64 {
-        match &self.neck {
-            NeckSlot::SALVEENHANCED => 1.2,
-            NeckSlot::SALVEREGULAR => 7.0 / 6.0,
-            NeckSlot::NONE => self.regular_bonus(on_task),
+        match self.equipment.get(&EquipmentSlot::NECK) {
+            Some(neck) if
+                neck.name == "Salve amulet"
+                || neck.name == "Salve amulet(i)" => 7.0 / 6.0,
+            Some(neck) if
+                neck.name == "Salve amulet (e)"
+                || neck.name == "Salve amulet(ei)" => 1.2,
+            _ => self.regular_bonus(on_task),
         }
     }
 
