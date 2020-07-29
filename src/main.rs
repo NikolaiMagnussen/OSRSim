@@ -5,12 +5,11 @@ use std::io::BufReader;
 
 #[allow(dead_code)]
 mod store;
-use store::Store;
 
 #[allow(dead_code)]
 mod player;
 use player::{
-    AttackPotion, AttackPrayer, AttackStyle, Gear, StrengthPotion, StrengthPrayer,
+    AttackPotion, AttackPrayer, Gear, StrengthPotion, StrengthPrayer,
 };
 
 #[allow(dead_code)]
@@ -70,7 +69,6 @@ fn load_player(
         AttackPrayer::NONE,
         StrengthPotion::NONE,
         StrengthPrayer::NONE,
-        AttackStyle::ACCURATE,
         Gear::empty(),
     );
     player.gear.add_equipment(api.get_item(&parsed_file.equipment.ring));
@@ -94,8 +92,6 @@ fn load_player(
         player.spare_equipment.add_weapon(api.get_weapon(&equipment));
         player.spare_equipment.add_equipment(api.get_item(&equipment));
     }
-
-    println!("Parsed player: {:#?}", player);
 
     let monster = api.get_monster(&parsed_file.monster_name)?;
     Some((player, monster.clone()))

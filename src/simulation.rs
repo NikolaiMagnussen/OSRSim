@@ -1,8 +1,13 @@
 #[allow(dead_code)]
 use crate::player::{
-    AttackPotion, AttackPrayer, AttackStyle, DefenceStyle, Gear, Monster,
-    Player, StrengthPotion, StrengthPrayer,
+    AttackStyle, DefenceStyle, Gear, Monster,
+    Player, SpareGear,
 };
+
+struct Simulation {
+    gear: Gear,
+    spare_equipment: SpareGear,
+}
 
 pub fn run_attack_styles(base: &Player, monster: &Monster) -> (f64, (AttackStyle, DefenceStyle)) {
     let mut a: Vec<(f64, (AttackStyle, DefenceStyle))> = base
@@ -15,12 +20,29 @@ pub fn run_attack_styles(base: &Player, monster: &Monster) -> (f64, (AttackStyle
     a.first().unwrap().clone()
 }
 
-pub fn run(base: Player, monster: &Monster) -> Player {
+pub fn run(base: Player, monster: &Monster) -> (Player, (f64, (AttackStyle, DefenceStyle))) {
     let mut player = base.clone();
-    let style: (f64, (AttackStyle, DefenceStyle)) = run_attack_styles(&base, monster);
-    println!("Style and DPS: {:#?}", style);
 
-    player.attack_style = (style.1).0;
+    let mut style: (f64, (AttackStyle, DefenceStyle)) = run_attack_styles(&player, monster);
+    let mut best_style = style;
+    for equipment in &base.spare_equipment.spare_equipment {
+        let mut player_tmp = player.clone();
+        for weapon in &base.spare_equipment.spare_weapons {
+            player_tmp.gear.add_weapon(Some(weapon));
+            player_tmp.gear.add_equipment(Some(equipment));
 
-    player
+            /* Run sim! */
+            style = run_attack_styles(&player_tmp, monster);
+            println!("Style and DPS: {:#?}", style);
+
+            /* Update best if the new sim is better */
+            if style.0 > best_style.0 {
+                best_style = style;
+                player = player_tmp.clone();
+            }
+        }
+    }
+    println!("The best style and player yields: {:#?}\n{:#?}", player, best_style);
+
+    (player, best_style)
 }

@@ -60,8 +60,8 @@ pub struct Gear {
 
 #[derive(Debug, Clone)]
 pub struct SpareGear {
-    spare_weapons: Vec<Weapon>,
-    spare_equipment: Vec<Equipment>,
+    pub spare_weapons: Vec<Weapon>,
+    pub spare_equipment: Vec<Equipment>,
 }
 
 impl SpareGear {
@@ -266,7 +266,6 @@ pub struct Player {
     attack_prayer: AttackPrayer,
     strength_potion: StrengthPotion,
     strength_prayer: StrengthPrayer,
-    pub attack_style: AttackStyle,
     pub gear: Gear,
     pub spare_equipment: SpareGear,
 }
@@ -280,7 +279,6 @@ impl Player {
         attack_prayer: AttackPrayer,
         strength_potion: StrengthPotion,
         strength_prayer: StrengthPrayer,
-        attack_style: AttackStyle,
         gear: Gear,
     ) -> Self {
         Player {
@@ -291,7 +289,6 @@ impl Player {
             attack_prayer: attack_prayer,
             strength_potion: strength_potion,
             strength_prayer: strength_prayer,
-            attack_style: attack_style,
             gear: gear,
             spare_equipment: SpareGear::new(),
         }
