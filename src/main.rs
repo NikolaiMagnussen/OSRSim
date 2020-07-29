@@ -1,3 +1,7 @@
+use serde::Deserialize;
+use std::fs::File;
+use std::io::BufReader;
+
 #[allow(dead_code)]
 mod store;
 
@@ -10,6 +14,28 @@ use player::{
 
 #[allow(dead_code)]
 mod simulation;
+
+#[derive(Deserialize, Debug, Clone)]
+struct ParsedFile {
+    player_name: String,
+    attack_level: isize,
+    attack_bonus: isize,
+    strength_level: isize,
+    strength_bonus: isize,
+    weapon_name: String,
+    slayer_helm: bool,
+    monster_name: String,
+}
+
+fn load_player(filename: &str, api: &impl store::Store) -> Option<(player::Player, player::Monster)> {
+    let file = File::open(filename).ok()?;
+    let reader = BufReader::new(file);
+    let parsed_file: ParsedFile = serde_json::from_reader(reader).ok()?;
+    let weapon = api.get_weapon(&parsed_file.weapon_name)?;
+    let player = player::Player::new(&parsed_file.player_name, parsed_file.attack_level, parsed_file.strength_level, AttackPotion::NONE, parsed_file.attack_bonus, AttackPrayer::NONE, StrengthPotion::NONE, parsed_file.strength_bonus, StrengthPrayer::NONE, AttackStyle::ACCURATE, Gear::new(SetBonus::NONE, HeadSlot::SLAYER, NeckSlot::NONE, weapon.clone()));
+    let monster = api.get_monster(&parsed_file.monster_name)?;
+    Some((player, monster.clone()))
+}
 
 /* What modules to have:
  * - main (orchestrate everything - for now)
@@ -40,6 +66,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Gear::new(SetBonus::NONE, HeadSlot::SLAYER, NeckSlot::NONE, weapon),
     );
 
+    use store::Store;
+    let f: store::FileStore = store::Store::connect("osrsbox-db");
+    if let Some((p, m)) = load_player("./loadout.json", &f) {
+        let better = simulation::run(p, &m);
+        println!("Better player: {:#?}", better);
+    }
+
     let better = simulation::run(player.clone(), &monster);
     println!("Better player: {:#?}", better);
 
@@ -58,8 +91,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
      *  Example of using the file store API to fetch information
      *  about weapons, (equipable) items and monsters.
      */
-    use store::Store;
-    let f: store::FileStore = store::Store::connect("osrsbox-db");
     let weapon = f.get_weapon(weapon_name);
     let monster = f.get_monster(monster_name);
     let item = f.get_item("Dragon chainbody");
