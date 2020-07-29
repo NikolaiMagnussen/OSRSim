@@ -71,6 +71,9 @@ pub enum EquipmentSlot {
     LEGS,
     HEAD,
     SHIELD,
+    WEAPON,
+    #[serde(rename = "2h")]
+    TWOHAND,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -98,6 +101,46 @@ pub struct _Equipment {
     slot: EquipmentSlot,
 }
 
+impl _Equipment {
+    pub fn unarmed() -> Self {
+        _Equipment {
+            attack_stab: 0,
+            attack_slash: 0,
+            attack_crush: 0,
+            attack_magic: 0,
+            attack_ranged: 0,
+            defence_stab: 0,
+            defence_slash: 0,
+            defence_crush: 0,
+            defence_magic: 0,
+            defence_ranged: 0,
+            melee_strength: 0,
+            ranged_strength: 0,
+            magic_damage: 0,
+            prayer: 0,
+            slot: EquipmentSlot::TWOHAND,
+        }
+    }
+
+    pub fn attack_bonus(&self, style: &DefenceStyle) -> isize {
+        match style {
+            DefenceStyle::STAB => self.attack_stab,
+            DefenceStyle::SLASH => self.attack_slash,
+            DefenceStyle::CRUSH => self.attack_crush,
+            DefenceStyle::RANGED => self.attack_ranged,
+            DefenceStyle::MAGIC | DefenceStyle::SPELLCASTING | DefenceStyle::DEFENSIVECASTING => self.attack_magic,
+        }
+    }
+
+    pub fn strength_bonus(&self, style: &DefenceStyle) -> isize {
+        match style {
+            DefenceStyle::STAB | DefenceStyle::SLASH | DefenceStyle::CRUSH => self.melee_strength,
+            DefenceStyle::RANGED => self.ranged_strength,
+            DefenceStyle::MAGIC | DefenceStyle::SPELLCASTING | DefenceStyle::DEFENSIVECASTING => self.magic_damage,
+        }
+    }
+}
+
 #[derive(Deserialize, Debug, Clone)]
 pub struct Equipment {
     name: String,
@@ -105,9 +148,9 @@ pub struct Equipment {
 }
 
 impl Gear {
-    pub fn new(weapon: Weapon) -> Self {
+    pub fn empty() -> Self {
         Gear {
-            weapon: weapon,
+            weapon: Weapon::default(),
             equipment: HashMap::new(),
         }
     }
@@ -165,7 +208,24 @@ impl Gear {
         }
     }
 
+    pub fn attack_equipment_bonus(&self, style: &DefenceStyle) -> isize {
+        let bonus: isize = self.equipment
+            .values()
+            .map(|x: &Equipment| x.equipment.attack_bonus(style))
+            .sum();
+        bonus + self.weapon.equipment.attack_bonus(style)
+    }
+
+    pub fn strength_equipment_bonus(&self, style: &DefenceStyle) -> isize {
+        let bonus: isize = self.equipment
+            .values()
+            .map(|x: &Equipment| x.equipment.strength_bonus(style))
+            .sum();
+        bonus + self.weapon.equipment.strength_bonus(style)
+    }
+
     pub fn attack_interval(&self) -> f64 {
+
         self.weapon.attack_interval()
     }
 }
@@ -177,10 +237,8 @@ pub struct Player {
     strength: isize,
     attack_potion: AttackPotion,
     attack_prayer: AttackPrayer,
-    attack_equipment_bonus: isize,
     strength_potion: StrengthPotion,
     strength_prayer: StrengthPrayer,
-    strength_equipment_bonus: isize,
     pub attack_style: AttackStyle,
     pub gear: Gear,
 }
@@ -191,10 +249,8 @@ impl Player {
         attack: isize,
         strength: isize,
         attack_potion: AttackPotion,
-        attack_equipment_bonus: isize,
         attack_prayer: AttackPrayer,
         strength_potion: StrengthPotion,
-        strength_equipment_bonus: isize,
         strength_prayer: StrengthPrayer,
         attack_style: AttackStyle,
         gear: Gear,
@@ -204,10 +260,8 @@ impl Player {
             attack: attack,
             strength: strength,
             attack_potion: attack_potion,
-            attack_equipment_bonus: attack_equipment_bonus,
             attack_prayer: attack_prayer,
             strength_potion: strength_potion,
-            strength_equipment_bonus: strength_equipment_bonus,
             strength_prayer: strength_prayer,
             attack_style: attack_style,
             gear: gear,
@@ -300,10 +354,10 @@ impl Player {
         bonus.floor() as isize
     }
 
-    pub fn max_hit(&self, monster: &Monster, on_task: bool, attack_style: &AttackStyle) -> isize {
+    pub fn max_hit(&self, monster: &Monster, on_task: bool, attack_style: &AttackStyle, defence_style: &DefenceStyle) -> isize {
         let hit = 0.5
             + self.effective_strength_level(attack_style) as f64
-                * (self.strength_equipment_bonus + 64) as f64
+                * (self.gear.strength_equipment_bonus(&defence_style) + 64) as f64
                 / 640.0;
         let after_bonus = match monster.is_undead() {
             false => hit.floor() * self.gear.regular_bonus(on_task),
@@ -317,8 +371,9 @@ impl Player {
         monster: &Monster,
         on_task: bool,
         attack_style: &AttackStyle,
+        defence_style: &DefenceStyle,
     ) -> isize {
-        let roll = self.effective_attack_level(attack_style) * (self.attack_equipment_bonus + 64);
+        let roll = self.effective_attack_level(attack_style) * (self.gear.attack_equipment_bonus(defence_style) + 64);
         let after_bonus = match monster.is_undead() {
             false => roll as f64 * self.gear.regular_bonus(on_task),
             true => roll as f64 * self.gear.undead_bonus(on_task),
@@ -332,7 +387,7 @@ impl Player {
         on_task: bool,
         style: &(AttackStyle, DefenceStyle),
     ) -> f64 {
-        let attack = self.max_attack_roll(monster, on_task, &style.0) as f64;
+        let attack = self.max_attack_roll(monster, on_task, &style.0, &style.1) as f64;
         let defence = monster.max_defence_roll(&style.1) as f64;
 
         if attack > defence {
@@ -349,7 +404,7 @@ impl Player {
         style: &(AttackStyle, DefenceStyle),
     ) -> f64 {
         self.hit_chance(monster, on_task, style)
-            * (self.max_hit(monster, on_task, &style.0) as f64 / 2.0)
+            * (self.max_hit(monster, on_task, &style.0, &style.1) as f64 / 2.0)
             / self.gear.attack_interval()
     }
 }
@@ -418,10 +473,46 @@ pub struct _Weapon {
     pub stances: Vec<WeaponStance>,
 }
 
+impl Default for _Weapon {
+    fn default() -> Self {
+        _Weapon {
+            attack_speed: 4,
+            stances: vec![
+                WeaponStance {
+                    combat_style: String::from("kick"),
+                    attack_type: Some(DefenceStyle::CRUSH),
+                    attack_style: Some(AttackStyle::AGGRESSIVE),
+                },
+                WeaponStance {
+                    combat_style: String::from("punch"),
+                    attack_type: Some(DefenceStyle::CRUSH),
+                    attack_style: Some(AttackStyle::ACCURATE),
+                },
+                WeaponStance {
+                    combat_style: String::from("block"),
+                    attack_type: Some(DefenceStyle::CRUSH),
+                    attack_style: Some(AttackStyle::DEFENSIVE),
+                },
+            ],
+        }
+    }
+}
+
 #[derive(Deserialize, Debug, Clone)]
 pub struct Weapon {
     pub name: String,
     pub weapon: _Weapon,
+    pub equipment: _Equipment,
+}
+
+impl Default for Weapon {
+    fn default() -> Self {
+        Weapon {
+            name: String::from("Unarmed"),
+            weapon: _Weapon::default(),
+            equipment: _Equipment::unarmed(),
+        }
+    }
 }
 
 impl Weapon {

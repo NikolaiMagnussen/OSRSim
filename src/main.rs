@@ -47,11 +47,7 @@ struct ParsedEquipment {
 struct ParsedFile {
     player_name: String,
     attack_level: isize,
-    attack_bonus: isize,
     strength_level: isize,
-    strength_bonus: isize,
-    weapon_name: String,
-    slayer_helm: bool,
     monster_name: String,
     equipment: ParsedEquipment,
 }
@@ -64,21 +60,16 @@ fn load_player(
     let reader = BufReader::new(file);
     let parsed_file: ParsedFile = serde_json::from_reader(reader).ok()?;
 
-    let weapon = api.get_weapon(&parsed_file.weapon_name)?;
     let mut player = player::Player::new(
         &parsed_file.player_name,
         parsed_file.attack_level,
         parsed_file.strength_level,
         AttackPotion::NONE,
-        parsed_file.attack_bonus,
         AttackPrayer::NONE,
         StrengthPotion::NONE,
-        parsed_file.strength_bonus,
         StrengthPrayer::NONE,
         AttackStyle::ACCURATE,
-        Gear::new(
-            weapon.clone(),
-        ),
+        Gear::empty(),
     );
     player.gear.add_equipment(api.get_item(&parsed_file.equipment.ring));
     player.gear.add_equipment(api.get_item(&parsed_file.equipment.feet));
@@ -101,46 +92,6 @@ fn load_player(
     Some((player, monster.clone()))
 }
 
-#[allow(dead_code)]
-async fn do_hardcoded() -> Result<(), Box<dyn std::error::Error>> {
-    let monster_name = "Aberrant spectre";
-    let weapon_name = "Abyssal whip";
-
-    let api = store::ApiStore::connect("https://api.osrsbox.com");
-    let weapon = api.get_weapon(weapon_name).await?;
-    let monster = api.get_monster(monster_name).await?;
-
-    let player = player::Player::new(
-        "Supergeni",
-        74,
-        74,
-        AttackPotion::ATTACK,
-        132,
-        AttackPrayer::NONE,
-        StrengthPotion::STRENGTH,
-        110,
-        StrengthPrayer::NONE,
-        AttackStyle::CONTROLLED,
-        Gear::new(weapon),
-    );
-
-    let better = simulation::run(player.clone(), &monster);
-    println!("Better player: {:#?}", better);
-
-    // Compared to osrs-genie.com - we have the correct DPS, because the author
-    // of the tool has not divided the max hit by two to get the average hit
-    // resulting in the DPS being double.
-    println!(
-        "{} has {} DPS against {}",
-        player.name,
-        player.dps(&monster, true, player.weapon_styles().first().unwrap()),
-        monster.name
-    );
-    println!("Getting the shark: {:#?}", api.get_item("Shark").await?);
-
-    Ok(())
-}
-
 /* What modules to have:
  * - main (orchestrate everything - for now)
  * - store (for querying items, via API, parsed file or other way)
@@ -154,7 +105,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("Store loaded..");
     if let Some((player, monster)) = load_player("./loadout.json", &api) {
-        println!("Loaded player: {:#?}", player);
         let better = simulation::run(player, &monster);
         println!("Better player: {:#?}", better);
     } else {
