@@ -134,8 +134,10 @@ impl Gear {
                 (head.name == "Void melee helm"
                  || head.name == "Void ranger helm"
                  || head.name == "Void mage helm")
-                && body.name == "Void knight top"
-                && legs.name == "Void knight robe"
+                && (body.name == "Void knight top"
+                    || body.name == "Elite void top")
+                && (legs.name == "Void knight robe"
+                    || legs.name == "Elite void robe")
                 && hands.name == "Void knight gloves" => 1.1,
             _ => 1.0,
         }
