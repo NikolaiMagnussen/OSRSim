@@ -1,6 +1,6 @@
 use serde::Deserialize;
-use std::collections::HashMap;
 use std::cmp::{Eq, PartialEq};
+use std::collections::HashMap;
 use std::hash::Hash;
 
 #[allow(dead_code)]
@@ -155,7 +155,9 @@ impl _Equipment {
             AttackType::SLASH => self.attack_slash,
             AttackType::CRUSH => self.attack_crush,
             AttackType::RANGED => self.attack_ranged,
-            AttackType::MAGIC | AttackType::SPELLCASTING | AttackType::DEFENSIVECASTING => self.attack_magic,
+            AttackType::MAGIC | AttackType::SPELLCASTING | AttackType::DEFENSIVECASTING => {
+                self.attack_magic
+            }
         }
     }
 
@@ -163,7 +165,9 @@ impl _Equipment {
         match style {
             AttackType::STAB | AttackType::SLASH | AttackType::CRUSH => self.melee_strength,
             AttackType::RANGED => self.ranged_strength,
-            AttackType::MAGIC | AttackType::SPELLCASTING | AttackType::DEFENSIVECASTING => self.magic_damage,
+            AttackType::MAGIC | AttackType::SPELLCASTING | AttackType::DEFENSIVECASTING => {
+                self.magic_damage
+            }
         }
     }
 }
@@ -184,7 +188,8 @@ impl Gear {
 
     pub fn add_equipment(&mut self, equipment: Option<&Equipment>) {
         if let Some(equipment) = equipment {
-            self.equipment.insert(equipment.equipment.slot, equipment.clone());
+            self.equipment
+                .insert(equipment.equipment.slot, equipment.clone());
         }
     }
 
@@ -200,43 +205,45 @@ impl Gear {
         let legs = self.equipment.get(&EquipmentSlot::LEGS);
         let hands = self.equipment.get(&EquipmentSlot::HANDS);
         match (head, body, legs, hands) {
-            (Some(head), Some(body), Some(legs), Some(hands)) if
-                (head.name == "Void melee helm"
-                 || head.name == "Void ranger helm"
-                 || head.name == "Void mage helm")
-                && (body.name == "Void knight top"
-                    || body.name == "Elite void top")
-                && (legs.name == "Void knight robe"
-                    || legs.name == "Elite void robe")
-                && hands.name == "Void knight gloves" => 1.1,
+            (Some(head), Some(body), Some(legs), Some(hands))
+                if (head.name == "Void melee helm"
+                    || head.name == "Void ranger helm"
+                    || head.name == "Void mage helm")
+                    && (body.name == "Void knight top" || body.name == "Elite void top")
+                    && (legs.name == "Void knight robe" || legs.name == "Elite void robe")
+                    && hands.name == "Void knight gloves" =>
+            {
+                1.1
+            }
             _ => 1.0,
         }
     }
 
     pub fn regular_bonus(&self, on_task: bool) -> f64 {
         match self.equipment.get(&EquipmentSlot::HEAD) {
-            Some(head) if
-                (head.name == "Slayer helmet"
-                 || head.name == "Slayer helmet (i)")
-                && on_task => 7.0 / 6.0,
+            Some(head)
+                if (head.name == "Slayer helmet" || head.name == "Slayer helmet (i)")
+                    && on_task =>
+            {
+                7.0 / 6.0
+            }
             _ => 1.0,
         }
     }
 
     pub fn undead_bonus(&self, on_task: bool) -> f64 {
         match self.equipment.get(&EquipmentSlot::NECK) {
-            Some(neck) if
-                neck.name == "Salve amulet"
-                || neck.name == "Salve amulet(i)" => 7.0 / 6.0,
-            Some(neck) if
-                neck.name == "Salve amulet (e)"
-                || neck.name == "Salve amulet(ei)" => 1.2,
+            Some(neck) if neck.name == "Salve amulet" || neck.name == "Salve amulet(i)" => {
+                7.0 / 6.0
+            }
+            Some(neck) if neck.name == "Salve amulet (e)" || neck.name == "Salve amulet(ei)" => 1.2,
             _ => self.regular_bonus(on_task),
         }
     }
 
     pub fn attack_equipment_bonus(&self, style: &AttackType) -> isize {
-        let bonus: isize = self.equipment
+        let bonus: isize = self
+            .equipment
             .values()
             .map(|x: &Equipment| x.equipment.attack_bonus(style))
             .sum();
@@ -244,7 +251,8 @@ impl Gear {
     }
 
     pub fn strength_equipment_bonus(&self, style: &AttackType) -> isize {
-        let bonus: isize = self.equipment
+        let bonus: isize = self
+            .equipment
             .values()
             .map(|x: &Equipment| x.equipment.strength_bonus(style))
             .sum();
@@ -252,7 +260,6 @@ impl Gear {
     }
 
     pub fn attack_interval(&self) -> f64 {
-
         self.weapon.attack_interval()
     }
 }
@@ -380,7 +387,13 @@ impl Player {
         bonus.floor() as isize
     }
 
-    pub fn max_hit(&self, monster: &Monster, on_task: bool, attack_style: &AttackStyle, defence_style: &AttackType) -> isize {
+    pub fn max_hit(
+        &self,
+        monster: &Monster,
+        on_task: bool,
+        attack_style: &AttackStyle,
+        defence_style: &AttackType,
+    ) -> isize {
         let hit = 0.5
             + self.effective_strength_level(attack_style) as f64
                 * (self.gear.strength_equipment_bonus(&defence_style) + 64) as f64
@@ -399,7 +412,8 @@ impl Player {
         attack_style: &AttackStyle,
         defence_style: &AttackType,
     ) -> isize {
-        let roll = self.effective_attack_level(attack_style) * (self.gear.attack_equipment_bonus(defence_style) + 64);
+        let roll = self.effective_attack_level(attack_style)
+            * (self.gear.attack_equipment_bonus(defence_style) + 64);
         let after_bonus = match monster.is_undead() {
             false => roll as f64 * self.gear.regular_bonus(on_task),
             true => roll as f64 * self.gear.undead_bonus(on_task),
@@ -423,12 +437,7 @@ impl Player {
         }
     }
 
-    pub fn dps(
-        &self,
-        monster: &Monster,
-        on_task: bool,
-        style: &(AttackStyle, AttackType),
-    ) -> f64 {
+    pub fn dps(&self, monster: &Monster, on_task: bool, style: &(AttackStyle, AttackType)) -> f64 {
         self.hit_chance(monster, on_task, style)
             * (self.max_hit(monster, on_task, &style.0, &style.1) as f64 / 2.0)
             / self.gear.attack_interval()

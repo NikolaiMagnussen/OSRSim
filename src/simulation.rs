@@ -1,12 +1,18 @@
 #[allow(dead_code)]
-use crate::player::{
-    AttackStyle, AttackType, Gear, Monster,
-    Player, SpareGear,
-};
+use crate::player::{AttackStyle, AttackType, Gear, Monster, Player, SpareGear};
 
-struct Simulation {
+pub struct Simulation {
     gear: Gear,
     spare_equipment: SpareGear,
+}
+
+impl Simulation {
+    pub fn new(gear: &Gear, spare_equipment: &SpareGear) -> Self {
+        Simulation {
+            gear: gear.clone(),
+            spare_equipment: spare_equipment.clone(),
+        }
+    }
 }
 
 pub fn run_attack_styles(base: &Player, monster: &Monster) -> (f64, (AttackStyle, AttackType)) {
@@ -42,7 +48,10 @@ pub fn run(base: Player, monster: &Monster) -> (Player, (f64, (AttackStyle, Atta
             }
         }
     }
-    println!("The best style and player yields: {:#?}\n{:#?}", player, best_style);
+    println!(
+        "The best style and player yields: {:#?}\n{:#?}",
+        player, best_style
+    );
 
     (player, best_style)
 }
