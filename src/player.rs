@@ -52,35 +52,10 @@ pub enum AttackStyle {
     MAGIC,
 }
 
-#[allow(dead_code)]
-#[derive(Debug, Clone)]
-pub enum SetBonus {
-    VOID,
-    NONE,
-}
-
-#[allow(dead_code)]
-#[derive(Debug, Clone)]
-pub enum HeadSlot {
-    SLAYER,
-    NONE,
-}
-
-#[allow(dead_code)]
-#[derive(Debug, Clone)]
-pub enum NeckSlot {
-    SALVEREGULAR,
-    SALVEENHANCED,
-    NONE,
-}
-
 #[derive(Debug, Clone)]
 pub struct Gear {
-    set_bonus: SetBonus,
-    head: HeadSlot,
-    neck: NeckSlot,
     pub weapon: Weapon,
-    equipment: HashMap<EquipmentSlot, Equipment>,
+    pub equipment: HashMap<EquipmentSlot, Equipment>,
 }
 
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -130,11 +105,8 @@ pub struct Equipment {
 }
 
 impl Gear {
-    pub fn new(set_bonus: SetBonus, head: HeadSlot, neck: NeckSlot, weapon: Weapon) -> Self {
+    pub fn new(weapon: Weapon) -> Self {
         Gear {
-            set_bonus: set_bonus,
-            head: head,
-            neck: neck,
             weapon: weapon,
             equipment: HashMap::new(),
         }

@@ -1,7 +1,7 @@
 #[allow(dead_code)]
 use crate::player::{
-    AttackPotion, AttackPrayer, AttackStyle, DefenceStyle, Gear, HeadSlot, Monster, NeckSlot,
-    Player, SetBonus, StrengthPotion, StrengthPrayer,
+    AttackPotion, AttackPrayer, AttackStyle, DefenceStyle, Gear, Monster,
+    Player, StrengthPotion, StrengthPrayer,
 };
 
 pub fn run_attack_styles(base: &Player, monster: &Monster) -> (f64, (AttackStyle, DefenceStyle)) {

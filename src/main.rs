@@ -10,8 +10,7 @@ use store::Store;
 #[allow(dead_code)]
 mod player;
 use player::{
-    AttackPotion, AttackPrayer, AttackStyle, Gear, HeadSlot, NeckSlot, SetBonus, StrengthPotion,
-    StrengthPrayer,
+    AttackPotion, AttackPrayer, AttackStyle, Gear, StrengthPotion, StrengthPrayer,
 };
 
 #[allow(dead_code)]
@@ -78,9 +77,6 @@ fn load_player(
         StrengthPrayer::NONE,
         AttackStyle::ACCURATE,
         Gear::new(
-            SetBonus::NONE,
-            HeadSlot::SLAYER,
-            NeckSlot::NONE,
             weapon.clone(),
         ),
     );
@@ -125,7 +121,7 @@ async fn do_hardcoded() -> Result<(), Box<dyn std::error::Error>> {
         110,
         StrengthPrayer::NONE,
         AttackStyle::CONTROLLED,
-        Gear::new(SetBonus::NONE, HeadSlot::SLAYER, NeckSlot::NONE, weapon),
+        Gear::new(weapon),
     );
 
     let better = simulation::run(player.clone(), &monster);
