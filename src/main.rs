@@ -85,9 +85,12 @@ async fn do_hardcoded() -> Result<(), Box<dyn std::error::Error>> {
  */
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let f: store::FileStore = store::Store::connect("osrsbox-db");
-    if let Some((p, m)) = load_player("./loadout.json", &f) {
-        let better = simulation::run(p, &m);
+    println!("Loading store..");
+    let api: store::FileStore = store::Store::connect("osrsbox-db");
+
+    println!("Store loaded..");
+    if let Some((player, monster)) = load_player("./loadout.json", &api) {
+        let better = simulation::run(player, &monster);
         println!("Better player: {:#?}", better);
     }
 
