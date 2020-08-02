@@ -52,7 +52,7 @@ pub enum AttackStyle {
     MAGIC,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Gear {
     pub weapon: Weapon,
     pub equipment: HashMap<EquipmentSlot, Equipment>,
