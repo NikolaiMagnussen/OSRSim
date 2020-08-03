@@ -49,6 +49,22 @@ impl GearSet {
     weapon: weapon,
         }
     }
+
+    fn equip_player(&self, base: &Player) -> Player {
+        let mut p = base.clone();
+        p.gear.add_equipment(self.ammo.as_ref());
+        p.gear.add_equipment(self.body.as_ref());
+        p.gear.add_equipment(self.cape.as_ref());
+        p.gear.add_equipment(self.feet.as_ref());
+        p.gear.add_equipment(self.head.as_ref());
+        p.gear.add_equipment(self.legs.as_ref());
+        p.gear.add_equipment(self.neck.as_ref());
+        p.gear.add_equipment(self.ring.as_ref());
+        p.gear.add_equipment(self.hands.as_ref());
+        p.gear.add_equipment(self.shield.as_ref());
+        p.gear.add_weapon(self.weapon.as_ref());
+        p
+    }
 }
 
 #[derive(Debug)]
@@ -222,6 +238,14 @@ pub fn run(base: Player, monster: &Monster) -> (Player, (f64, (AttackStyle, Atta
     s.init();
     let combos = s.get_gear_combinations();
     println!("Gear combinations ({}): {:#?}", combos.len(), combos);
+
+    let mut a: Vec<((f64, (AttackStyle, AttackType)), &GearSet)> = combos
+        .iter()
+        .map(|x| (run_attack_styles(&x.equip_player(&player), monster), x))
+        .collect();
+    a.sort_unstable_by(|x, y| (y.0).0.partial_cmp(&(x.0).0).unwrap());
+    println!("The best gear combination shit: {:#?}", a);
+
 
     let mut style: (f64, (AttackStyle, AttackType)) = run_attack_styles(&player, monster);
     let mut best_style = style;
