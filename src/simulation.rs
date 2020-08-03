@@ -8,7 +8,7 @@ use crate::player::{
 // - ignore everything of gear that does not provide any attack bonuses
 // - except for void, salve and slayer that provides special bonuses
 
-#[derive(Debug, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct GearSet {
     ammo: Option<Equipment>,
     body: Option<Equipment>,
@@ -231,45 +231,17 @@ pub fn run_attack_styles(base: &Player, monster: &Monster) -> (f64, (AttackStyle
     a.first().unwrap().clone()
 }
 
-pub fn run(base: Player, monster: &Monster) -> (Player, (f64, (AttackStyle, AttackType))) {
-    let mut player = base.clone();
+pub fn run(player: Player, monster: &Monster) -> ((f64, (AttackStyle, AttackType)), GearSet) {
+    let mut sim = Simulation::new(&player.gear, &player.spare_equipment);
+    sim.init();
+    let gear = sim.get_gear_combinations();
 
-    let mut s = Simulation::new(&base.gear, &base.spare_equipment);
-    s.init();
-    let combos = s.get_gear_combinations();
-    println!("Gear combinations ({}): {:#?}", combos.len(), combos);
-
-    let mut a: Vec<((f64, (AttackStyle, AttackType)), &GearSet)> = combos
+    let mut results: Vec<((f64, (AttackStyle, AttackType)), &GearSet)> = gear
         .iter()
         .map(|x| (run_attack_styles(&x.equip_player(&player), monster), x))
         .collect();
-    a.sort_unstable_by(|x, y| (y.0).0.partial_cmp(&(x.0).0).unwrap());
-    println!("The best gear combination shit: {:#?}", a);
+    results.sort_unstable_by(|x, y| (y.0).0.partial_cmp(&(x.0).0).unwrap());
 
-
-    let mut style: (f64, (AttackStyle, AttackType)) = run_attack_styles(&player, monster);
-    let mut best_style = style;
-    for equipment in &base.spare_equipment.spare_equipment {
-        let mut player_tmp = player.clone();
-        for weapon in &base.spare_equipment.spare_weapons {
-            player_tmp.gear.add_weapon(Some(weapon));
-            player_tmp.gear.add_equipment(Some(equipment));
-
-            /* Run sim! */
-            style = run_attack_styles(&player_tmp, monster);
-            println!("Style and DPS: {:#?}", style);
-
-            /* Update best if the new sim is better */
-            if style.0 > best_style.0 {
-                best_style = style;
-                player = player_tmp.clone();
-            }
-        }
-    }
-    println!(
-        "The best style and player yields: {:#?}\n{:#?}",
-        player, best_style
-    );
-
-    (player, best_style)
+    let fst = results.first().expect("This should not happen: we need to have at least one gearset..");
+    (fst.0, fst.1.clone())
 }
