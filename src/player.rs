@@ -2,6 +2,7 @@ use serde::Deserialize;
 use std::cmp::{Eq, PartialEq};
 use std::collections::HashMap;
 use std::hash::Hash;
+use std::fmt;
 
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
@@ -103,6 +104,28 @@ pub enum EquipmentSlot {
     TWOHAND,
 }
 
+impl fmt::Display for EquipmentSlot {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}",
+            match self {
+                EquipmentSlot::RING => "ring",
+                EquipmentSlot::FEET => "feet",
+                EquipmentSlot::HANDS => "hands",
+                EquipmentSlot::NECK => "neck",
+                EquipmentSlot::AMMO => "ammo",
+                EquipmentSlot::CAPE => "cape",
+                EquipmentSlot::BODY => "body",
+                EquipmentSlot::LEGS => "legs",
+                EquipmentSlot::HEAD => "head",
+                EquipmentSlot::SHIELD => "shield",
+                EquipmentSlot::WEAPON => "wep",
+                EquipmentSlot::TWOHAND => "2h",
+            }
+        )
+
+    }
+}
+
 #[derive(Deserialize, Debug, Clone)]
 pub enum WeaponSlot {
     TWOHAND(Weapon),
@@ -176,6 +199,21 @@ impl _Equipment {
 pub struct Equipment {
     pub name: String,
     pub equipment: _Equipment,
+}
+
+impl Default for Equipment {
+    fn default() -> Self {
+        Equipment {
+            name: String::new(),
+            equipment: _Equipment::unarmed(),
+        }
+    }
+}
+
+impl fmt::Display for Equipment {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "({}) {}", self.equipment.slot, self.name)
+    }
 }
 
 impl Gear {
@@ -538,6 +576,12 @@ pub struct Weapon {
     pub name: String,
     pub weapon: _Weapon,
     pub equipment: _Equipment,
+}
+
+impl fmt::Display for Weapon {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "({}) {}", self.equipment.slot, self.name)
+    }
 }
 
 impl Default for Weapon {
