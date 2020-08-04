@@ -26,60 +26,75 @@ pub struct GearSet {
 
 impl fmt::Display for GearSet {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Gear: [{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}]",
-               &self.ammo.clone().unwrap_or_default(),
-               &self.body.clone().unwrap_or_default(),
-               &self.cape.clone().unwrap_or_default(),
-               &self.feet.clone().unwrap_or_default(),
-               &self.head.clone().unwrap_or_default(),
-               &self.legs.clone().unwrap_or_default(),
-               &self.neck.clone().unwrap_or_default(),
-               &self.ring.clone().unwrap_or_default(),
-               &self.hands.clone().unwrap_or_default(),
-               &self.shield.clone().unwrap_or_default(),
-               &self.weapon.clone().unwrap_or_default())
+        write!(
+            f,
+            "Gear: [{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}]",
+            &self.ammo.clone().unwrap_or_default(),
+            &self.body.clone().unwrap_or_default(),
+            &self.cape.clone().unwrap_or_default(),
+            &self.feet.clone().unwrap_or_default(),
+            &self.head.clone().unwrap_or_default(),
+            &self.legs.clone().unwrap_or_default(),
+            &self.neck.clone().unwrap_or_default(),
+            &self.ring.clone().unwrap_or_default(),
+            &self.hands.clone().unwrap_or_default(),
+            &self.shield.clone().unwrap_or_default(),
+            &self.weapon.clone().unwrap_or_default()
+        )
     }
 }
 
 impl GearSet {
-    fn new(ammo: Option<Equipment>,
-    body: Option<Equipment>,
-    cape: Option<Equipment>,
-    feet: Option<Equipment>,
-    head: Option<Equipment>,
-    legs: Option<Equipment>,
-    neck: Option<Equipment>,
-    ring: Option<Equipment>,
-    hands: Option<Equipment>,
-    shield: Option<Equipment>,
-    weapon: Option<Weapon>) -> Self {
+    fn new(
+        ammo: Option<Equipment>,
+        body: Option<Equipment>,
+        cape: Option<Equipment>,
+        feet: Option<Equipment>,
+        head: Option<Equipment>,
+        legs: Option<Equipment>,
+        neck: Option<Equipment>,
+        ring: Option<Equipment>,
+        hands: Option<Equipment>,
+        shield: Option<Equipment>,
+        weapon: Option<Weapon>,
+    ) -> Self {
         GearSet {
-      ammo: ammo,
-      body: body,
-      cape: cape,
-      feet: feet,
-      head: head,
-      legs: legs,
-      neck: neck,
-      ring: ring,
-     hands: hands,
-    shield: shield,
-    weapon: weapon,
+            ammo: ammo,
+            body: body,
+            cape: cape,
+            feet: feet,
+            head: head,
+            legs: legs,
+            neck: neck,
+            ring: ring,
+            hands: hands,
+            shield: shield,
+            weapon: weapon,
         }
     }
 
     fn equip_player(&self, base: &Player) -> Player {
         let mut p = base.clone();
-        p.gear.add_equipment(&EquipmentSlot::AMMO, self.ammo.clone());
-        p.gear.add_equipment(&EquipmentSlot::BODY, self.body.clone());
-        p.gear.add_equipment(&EquipmentSlot::CAPE, self.cape.clone());
-        p.gear.add_equipment(&EquipmentSlot::FEET, self.feet.clone());
-        p.gear.add_equipment(&EquipmentSlot::HEAD, self.head.clone());
-        p.gear.add_equipment(&EquipmentSlot::LEGS, self.legs.clone());
-        p.gear.add_equipment(&EquipmentSlot::NECK, self.neck.clone());
-        p.gear.add_equipment(&EquipmentSlot::RING, self.ring.clone());
-        p.gear.add_equipment(&EquipmentSlot::HANDS, self.hands.clone());
-        p.gear.add_equipment(&EquipmentSlot::SHIELD, self.shield.clone());
+        p.gear
+            .add_equipment(&EquipmentSlot::AMMO, self.ammo.clone());
+        p.gear
+            .add_equipment(&EquipmentSlot::BODY, self.body.clone());
+        p.gear
+            .add_equipment(&EquipmentSlot::CAPE, self.cape.clone());
+        p.gear
+            .add_equipment(&EquipmentSlot::FEET, self.feet.clone());
+        p.gear
+            .add_equipment(&EquipmentSlot::HEAD, self.head.clone());
+        p.gear
+            .add_equipment(&EquipmentSlot::LEGS, self.legs.clone());
+        p.gear
+            .add_equipment(&EquipmentSlot::NECK, self.neck.clone());
+        p.gear
+            .add_equipment(&EquipmentSlot::RING, self.ring.clone());
+        p.gear
+            .add_equipment(&EquipmentSlot::HANDS, self.hands.clone());
+        p.gear
+            .add_equipment(&EquipmentSlot::SHIELD, self.shield.clone());
         p.gear.add_weapon(self.weapon.clone());
         p
     }
@@ -201,7 +216,7 @@ impl Simulation {
          *                  for i in hd:
          *                      a.append(kake(tl, (i, *t)))
          *                  return a
-         *       
+         *
          * In [24]: kake(a, ())
          * Out[24]: [[[(5, 3, 1), (6, 3, 1)], [(5, 4, 1), (6, 4, 1)]],
          *           [[(5, 3, 2), (6, 3, 2)], [(5, 4, 2), (6, 4, 2)]]]
@@ -218,24 +233,6 @@ impl Simulation {
                                         for hands in &self.hands {
                                             for twohand in &self.twohand {
                                                 let gc = GearSet::new(
-                                                ammo.clone(),
-                                                body.clone(),
-                                                cape.clone(),
-                                                feet.clone(),
-                                                head.clone(),
-                                                legs.clone(),
-                                                neck.clone(),
-                                                ring.clone(),
-                                                hands.clone(),
-                                                None,
-                                                twohand.clone());
-
-                                                set.insert(gc);
-                                            }
-
-                                            for weapon in &self.weapon {
-                                                for shield in &self.shield {
-                                                    let gc = GearSet::new(
                                                     ammo.clone(),
                                                     body.clone(),
                                                     cape.clone(),
@@ -245,8 +242,28 @@ impl Simulation {
                                                     neck.clone(),
                                                     ring.clone(),
                                                     hands.clone(),
-                                                    shield.clone(),
-                                                    weapon.clone());
+                                                    None,
+                                                    twohand.clone(),
+                                                );
+
+                                                set.insert(gc);
+                                            }
+
+                                            for weapon in &self.weapon {
+                                                for shield in &self.shield {
+                                                    let gc = GearSet::new(
+                                                        ammo.clone(),
+                                                        body.clone(),
+                                                        cape.clone(),
+                                                        feet.clone(),
+                                                        head.clone(),
+                                                        legs.clone(),
+                                                        neck.clone(),
+                                                        ring.clone(),
+                                                        hands.clone(),
+                                                        shield.clone(),
+                                                        weapon.clone(),
+                                                    );
 
                                                     set.insert(gc);
                                                 }
@@ -265,18 +282,31 @@ impl Simulation {
     }
 }
 
-pub fn run_attack_styles(base: &Player, monster: &Monster) -> (f64, (AttackStyle, AttackType), isize, isize) {
+pub fn run_attack_styles(
+    base: &Player,
+    monster: &Monster,
+) -> (f64, (AttackStyle, AttackType), isize, isize) {
     let mut a: Vec<(f64, (AttackStyle, AttackType), isize, isize)> = base
         .weapon_styles()
         .iter()
-        .map(|x| (base.dps(monster, true, x), x.clone(), base.gear.attack_equipment_bonus(&x.1), base.gear.strength_equipment_bonus(&x.1)))
+        .map(|x| {
+            (
+                base.dps(monster, true, x),
+                x.clone(),
+                base.gear.attack_equipment_bonus(&x.1),
+                base.gear.strength_equipment_bonus(&x.1),
+            )
+        })
         .collect();
     a.sort_unstable_by(|x, y| y.0.partial_cmp(&x.0).unwrap());
 
     a.first().unwrap().clone()
 }
 
-pub fn run(player: Player, monster: &Monster) -> ((f64, (AttackStyle, AttackType), isize, isize), GearSet) {
+pub fn run(
+    player: Player,
+    monster: &Monster,
+) -> ((f64, (AttackStyle, AttackType), isize, isize), GearSet) {
     let mut sim = Simulation::new(&player.gear, &player.spare_equipment);
     sim.init();
     let gear = sim.get_gear_combinations();
@@ -288,9 +318,19 @@ pub fn run(player: Player, monster: &Monster) -> ((f64, (AttackStyle, AttackType
     results.sort_unstable_by(|x, y| (y.0).0.partial_cmp(&(x.0).0).unwrap());
     // Debug
     for r in &results {
-        println!("{} (att: {}|str: {}) -> [{} - {}] {}", (r.0).0, (r.0).2, (r.0).3, ((r.0).1).0, ((r.0).1).1, r.1);
+        println!(
+            "{} (att: {}|str: {}) -> [{} - {}] {}",
+            (r.0).0,
+            (r.0).2,
+            (r.0).3,
+            ((r.0).1).0,
+            ((r.0).1).1,
+            r.1
+        );
     }
 
-    let fst = results.first().expect("This should not happen: we need to have at least one gearset..");
+    let fst = results
+        .first()
+        .expect("This should not happen: we need to have at least one gearset..");
     (fst.0, fst.1.clone())
 }

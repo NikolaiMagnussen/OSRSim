@@ -1,8 +1,8 @@
 use serde::Deserialize;
 use std::cmp::{Eq, PartialEq};
 use std::collections::HashMap;
-use std::hash::Hash;
 use std::fmt;
+use std::hash::Hash;
 
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
@@ -55,28 +55,36 @@ pub enum AttackStyle {
 
 impl fmt::Display for AttackStyle {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", match self {
-            AttackStyle::MAGIC => "magic",
-            AttackStyle::RANGED => "ranged",
-            AttackStyle::DEFENSIVE => "defensive",
-            AttackStyle::ACCURATE => "accurate",
-            AttackStyle::CONTROLLED => "controlled",
-            AttackStyle::AGGRESSIVE => "agressive",
-        })
+        write!(
+            f,
+            "{}",
+            match self {
+                AttackStyle::MAGIC => "magic",
+                AttackStyle::RANGED => "ranged",
+                AttackStyle::DEFENSIVE => "defensive",
+                AttackStyle::ACCURATE => "accurate",
+                AttackStyle::CONTROLLED => "controlled",
+                AttackStyle::AGGRESSIVE => "agressive",
+            }
+        )
     }
 }
 
 impl fmt::Display for AttackType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", match self {
-            AttackType::RANGED => "ranged",
-            AttackType::MAGIC => "magic",
-            AttackType::STAB => "stab",
-            AttackType::CRUSH => "crush",
-            AttackType::SLASH => "slash",
-            AttackType::SPELLCASTING => "spellcasting",
-            AttackType::DEFENSIVECASTING => "defensive casting",
-        })
+        write!(
+            f,
+            "{}",
+            match self {
+                AttackType::RANGED => "ranged",
+                AttackType::MAGIC => "magic",
+                AttackType::STAB => "stab",
+                AttackType::CRUSH => "crush",
+                AttackType::SLASH => "slash",
+                AttackType::SPELLCASTING => "spellcasting",
+                AttackType::DEFENSIVECASTING => "defensive casting",
+            }
+        )
     }
 }
 
@@ -85,14 +93,6 @@ pub struct Gear {
     pub weapon: Option<Weapon>,
     pub equipment: HashMap<EquipmentSlot, Option<Equipment>>,
 }
-
-/*
-impl fmt::Display for Gear {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        
-    }
-}
-*/
 
 #[derive(Debug, Clone)]
 pub struct SpareGear {
@@ -141,7 +141,9 @@ pub enum EquipmentSlot {
 
 impl fmt::Display for EquipmentSlot {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}",
+        write!(
+            f,
+            "{}",
             match self {
                 EquipmentSlot::RING => "ring",
                 EquipmentSlot::FEET => "feet",
@@ -157,7 +159,6 @@ impl fmt::Display for EquipmentSlot {
                 EquipmentSlot::TWOHAND => "2h",
             }
         )
-
     }
 }
 
@@ -308,7 +309,11 @@ impl Gear {
             Some(Some(neck)) if neck.name == "Salve amulet" || neck.name == "Salve amulet(i)" => {
                 7.0 / 6.0
             }
-            Some(Some(neck)) if neck.name == "Salve amulet (e)" || neck.name == "Salve amulet(ei)" => 1.2,
+            Some(Some(neck))
+                if neck.name == "Salve amulet (e)" || neck.name == "Salve amulet(ei)" =>
+            {
+                1.2
+            }
             _ => self.regular_bonus(on_task),
         }
     }
@@ -319,7 +324,11 @@ impl Gear {
             .values()
             .map(|y| y.as_ref().map_or(0, |x| x.equipment.attack_bonus(style)))
             .sum();
-        bonus + self.weapon.as_ref().map_or(0, |x| x.equipment.attack_bonus(style))
+        bonus
+            + self
+                .weapon
+                .as_ref()
+                .map_or(0, |x| x.equipment.attack_bonus(style))
     }
 
     pub fn strength_equipment_bonus(&self, style: &AttackType) -> isize {
@@ -328,11 +337,17 @@ impl Gear {
             .values()
             .map(|y| y.as_ref().map_or(0, |x| x.equipment.strength_bonus(style)))
             .sum();
-        bonus + self.weapon.as_ref().map_or(0, |x| x.equipment.strength_bonus(style))
+        bonus
+            + self
+                .weapon
+                .as_ref()
+                .map_or(0, |x| x.equipment.strength_bonus(style))
     }
 
     pub fn attack_interval(&self) -> f64 {
-        self.weapon.as_ref().map_or(4.0 * 0.6, |x| x.attack_interval())
+        self.weapon
+            .as_ref()
+            .map_or(4.0 * 0.6, |x| x.attack_interval())
     }
 }
 
