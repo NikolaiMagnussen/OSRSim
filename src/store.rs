@@ -6,9 +6,9 @@ use std::io::{BufReader, Error, ErrorKind};
 
 pub trait Store {
     fn connect(path: &str) -> Self;
-    fn get_weapon(&self, name: &str) -> Option<&Weapon>;
-    fn get_item(&self, name: &str) -> Option<&Equipment>;
-    fn get_monster(&self, name: &str) -> Option<&Monster>;
+    fn get_weapon(&self, name: &str) -> Option<Weapon>;
+    fn get_item(&self, name: &str) -> Option<Equipment>;
+    fn get_monster(&self, name: &str) -> Option<Monster>;
 }
 
 #[allow(dead_code)]
@@ -145,15 +145,15 @@ impl Store for FileStore {
         }
     }
 
-    fn get_weapon(&self, name: &str) -> Option<&Weapon> {
-        self.weapons.get(name)
+    fn get_weapon(&self, name: &str) -> Option<Weapon> {
+        self.weapons.get(name).cloned()
     }
 
-    fn get_item(&self, name: &str) -> Option<&Equipment> {
-        self.items.get(name)
+    fn get_item(&self, name: &str) -> Option<Equipment> {
+        self.items.get(name).cloned()
     }
 
-    fn get_monster(&self, name: &str) -> Option<&Monster> {
-        self.monsters.get(name)
+    fn get_monster(&self, name: &str) -> Option<Monster> {
+        self.monsters.get(name).cloned()
     }
 }

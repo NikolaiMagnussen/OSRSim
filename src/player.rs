@@ -53,11 +53,46 @@ pub enum AttackStyle {
     MAGIC,
 }
 
+impl fmt::Display for AttackStyle {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", match self {
+            AttackStyle::MAGIC => "magic",
+            AttackStyle::RANGED => "ranged",
+            AttackStyle::DEFENSIVE => "defensive",
+            AttackStyle::ACCURATE => "accurate",
+            AttackStyle::CONTROLLED => "controlled",
+            AttackStyle::AGGRESSIVE => "agressive",
+        })
+    }
+}
+
+impl fmt::Display for AttackType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", match self {
+            AttackType::RANGED => "ranged",
+            AttackType::MAGIC => "magic",
+            AttackType::STAB => "stab",
+            AttackType::CRUSH => "crush",
+            AttackType::SLASH => "slash",
+            AttackType::SPELLCASTING => "spellcasting",
+            AttackType::DEFENSIVECASTING => "defensive casting",
+        })
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Gear {
-    pub weapon: Weapon,
-    pub equipment: HashMap<EquipmentSlot, Equipment>,
+    pub weapon: Option<Weapon>,
+    pub equipment: HashMap<EquipmentSlot, Option<Equipment>>,
 }
+
+/*
+impl fmt::Display for Gear {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        
+    }
+}
+*/
 
 #[derive(Debug, Clone)]
 pub struct SpareGear {
@@ -212,29 +247,28 @@ impl Default for Equipment {
 
 impl fmt::Display for Equipment {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "({}) {}", self.equipment.slot, self.name)
+        if self.name.is_empty() {
+            write!(f, "NONE")
+        } else {
+            write!(f, "({}) {}", self.equipment.slot, self.name)
+        }
     }
 }
 
 impl Gear {
     pub fn empty() -> Self {
         Gear {
-            weapon: Weapon::default(),
+            weapon: None,
             equipment: HashMap::new(),
         }
     }
 
-    pub fn add_equipment(&mut self, equipment: Option<&Equipment>) {
-        if let Some(equipment) = equipment {
-            self.equipment
-                .insert(equipment.equipment.slot, equipment.clone());
-        }
+    pub fn add_equipment(&mut self, slot: &EquipmentSlot, equipment: Option<Equipment>) {
+        self.equipment.insert(*slot, equipment.clone());
     }
 
-    pub fn add_weapon(&mut self, weapon: Option<&Weapon>) {
-        if let Some(weapon) = weapon {
-            self.weapon = weapon.clone();
-        }
+    pub fn add_weapon(&mut self, weapon: Option<Weapon>) {
+        self.weapon = weapon.clone();
     }
 
     pub fn void_bonus(&self) -> f64 {
@@ -243,7 +277,7 @@ impl Gear {
         let legs = self.equipment.get(&EquipmentSlot::LEGS);
         let hands = self.equipment.get(&EquipmentSlot::HANDS);
         match (head, body, legs, hands) {
-            (Some(head), Some(body), Some(legs), Some(hands))
+            (Some(Some(head)), Some(Some(body)), Some(Some(legs)), Some(Some(hands)))
                 if (head.name == "Void melee helm"
                     || head.name == "Void ranger helm"
                     || head.name == "Void mage helm")
@@ -259,7 +293,7 @@ impl Gear {
 
     pub fn regular_bonus(&self, on_task: bool) -> f64 {
         match self.equipment.get(&EquipmentSlot::HEAD) {
-            Some(head)
+            Some(Some(head))
                 if (head.name == "Slayer helmet" || head.name == "Slayer helmet (i)")
                     && on_task =>
             {
@@ -271,10 +305,10 @@ impl Gear {
 
     pub fn undead_bonus(&self, on_task: bool) -> f64 {
         match self.equipment.get(&EquipmentSlot::NECK) {
-            Some(neck) if neck.name == "Salve amulet" || neck.name == "Salve amulet(i)" => {
+            Some(Some(neck)) if neck.name == "Salve amulet" || neck.name == "Salve amulet(i)" => {
                 7.0 / 6.0
             }
-            Some(neck) if neck.name == "Salve amulet (e)" || neck.name == "Salve amulet(ei)" => 1.2,
+            Some(Some(neck)) if neck.name == "Salve amulet (e)" || neck.name == "Salve amulet(ei)" => 1.2,
             _ => self.regular_bonus(on_task),
         }
     }
@@ -283,22 +317,22 @@ impl Gear {
         let bonus: isize = self
             .equipment
             .values()
-            .map(|x: &Equipment| x.equipment.attack_bonus(style))
+            .map(|y| y.as_ref().map_or(0, |x| x.equipment.attack_bonus(style)))
             .sum();
-        bonus + self.weapon.equipment.attack_bonus(style)
+        bonus + self.weapon.as_ref().map_or(0, |x| x.equipment.attack_bonus(style))
     }
 
     pub fn strength_equipment_bonus(&self, style: &AttackType) -> isize {
         let bonus: isize = self
             .equipment
             .values()
-            .map(|x: &Equipment| x.equipment.strength_bonus(style))
+            .map(|y| y.as_ref().map_or(0, |x| x.equipment.strength_bonus(style)))
             .sum();
-        bonus + self.weapon.equipment.strength_bonus(style)
+        bonus + self.weapon.as_ref().map_or(0, |x| x.equipment.strength_bonus(style))
     }
 
     pub fn attack_interval(&self) -> f64 {
-        self.weapon.attack_interval()
+        self.weapon.as_ref().map_or(4.0 * 0.6, |x| x.attack_interval())
     }
 }
 
@@ -352,7 +386,8 @@ impl Player {
     pub fn weapon_styles(&self) -> Vec<(AttackStyle, AttackType)> {
         self.gear
             .weapon
-            .weapon
+            .as_ref()
+            .map_or(_Weapon::default(), |x| x.weapon.clone())
             .stances
             .iter()
             .map(|x| (x.attack_style.unwrap(), x.attack_type.unwrap()))
@@ -430,11 +465,11 @@ impl Player {
         monster: &Monster,
         on_task: bool,
         attack_style: &AttackStyle,
-        defence_style: &AttackType,
+        attack_type: &AttackType,
     ) -> isize {
         let hit = 0.5
             + self.effective_strength_level(attack_style) as f64
-                * (self.gear.strength_equipment_bonus(&defence_style) + 64) as f64
+                * (self.gear.strength_equipment_bonus(&attack_type) + 64) as f64
                 / 640.0;
         let after_bonus = match monster.is_undead() {
             false => hit.floor() * self.gear.regular_bonus(on_task),
@@ -448,10 +483,10 @@ impl Player {
         monster: &Monster,
         on_task: bool,
         attack_style: &AttackStyle,
-        defence_style: &AttackType,
+        attack_type: &AttackType,
     ) -> isize {
         let roll = self.effective_attack_level(attack_style)
-            * (self.gear.attack_equipment_bonus(defence_style) + 64);
+            * (self.gear.attack_equipment_bonus(attack_type) + 64);
         let after_bonus = match monster.is_undead() {
             false => roll as f64 * self.gear.regular_bonus(on_task),
             true => roll as f64 * self.gear.undead_bonus(on_task),
@@ -512,8 +547,8 @@ impl Monster {
         self.defence_level + 1 + 8
     }
 
-    fn defence_equipment_bonus(&self, defence_style: &AttackType) -> isize {
-        match defence_style {
+    fn defence_equipment_bonus(&self, attack_type: &AttackType) -> isize {
+        match attack_type {
             AttackType::STAB => self.defence_stab,
             AttackType::SLASH => self.defence_slash,
             AttackType::CRUSH => self.defence_crush,
@@ -524,8 +559,8 @@ impl Monster {
         }
     }
 
-    fn max_defence_roll(&self, defence_style: &AttackType) -> isize {
-        self.effective_defence_level() * (self.defence_equipment_bonus(defence_style) + 64)
+    fn max_defence_roll(&self, attack_type: &AttackType) -> isize {
+        self.effective_defence_level() * (self.defence_equipment_bonus(attack_type) + 64)
     }
 
     fn is_undead(&self) -> bool {
@@ -606,3 +641,10 @@ impl Weapon {
             .unwrap()
     }
 }
+
+/*
+#[cfg(test)]
+mod tests {
+    use super::*;
+}
+*/

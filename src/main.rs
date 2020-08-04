@@ -8,7 +8,7 @@ mod store;
 
 #[allow(dead_code)]
 mod player;
-use player::{AttackPotion, AttackPrayer, Gear, StrengthPotion, StrengthPrayer};
+use player::{AttackPotion, AttackPrayer, Gear, StrengthPotion, StrengthPrayer, EquipmentSlot};
 
 #[allow(dead_code)]
 mod simulation;
@@ -71,35 +71,35 @@ fn load_player(
     );
     player
         .gear
-        .add_equipment(api.get_item(&parsed_file.equipment.ring));
+        .add_equipment(&EquipmentSlot::RING, api.get_item(&parsed_file.equipment.ring));
     player
         .gear
-        .add_equipment(api.get_item(&parsed_file.equipment.feet));
+        .add_equipment(&EquipmentSlot::FEET, api.get_item(&parsed_file.equipment.feet));
     player
         .gear
-        .add_equipment(api.get_item(&parsed_file.equipment.hands));
+        .add_equipment(&EquipmentSlot::HANDS, api.get_item(&parsed_file.equipment.hands));
     player
         .gear
-        .add_equipment(api.get_item(&parsed_file.equipment.neck));
+        .add_equipment(&EquipmentSlot::NECK, api.get_item(&parsed_file.equipment.neck));
     player
         .gear
-        .add_equipment(api.get_item(&parsed_file.equipment.ammo));
+        .add_equipment(&EquipmentSlot::AMMO, api.get_item(&parsed_file.equipment.ammo));
     player
         .gear
-        .add_equipment(api.get_item(&parsed_file.equipment.cape));
+        .add_equipment(&EquipmentSlot::CAPE, api.get_item(&parsed_file.equipment.cape));
     player
         .gear
-        .add_equipment(api.get_item(&parsed_file.equipment.body));
+        .add_equipment(&EquipmentSlot::BODY, api.get_item(&parsed_file.equipment.body));
     player
         .gear
-        .add_equipment(api.get_item(&parsed_file.equipment.legs));
+        .add_equipment(&EquipmentSlot::LEGS, api.get_item(&parsed_file.equipment.legs));
     player
         .gear
-        .add_equipment(api.get_item(&parsed_file.equipment.head));
+        .add_equipment(&EquipmentSlot::HEAD, api.get_item(&parsed_file.equipment.head));
     match parsed_file.equipment.weapon {
-        ParsedWeapon::TWOHAND(twohand) => player.gear.add_equipment(api.get_item(&twohand)),
+        ParsedWeapon::TWOHAND(twohand) => player.gear.add_weapon(api.get_weapon(&twohand)),
         ParsedWeapon::ONEHAND(onehand) => {
-            player.gear.add_equipment(api.get_item(&onehand.shield));
+            player.gear.add_equipment(&EquipmentSlot::SHIELD, api.get_item(&onehand.shield));
             player.gear.add_weapon(api.get_weapon(&onehand.weapon));
         }
     };
@@ -107,10 +107,10 @@ fn load_player(
     for equipment in parsed_file.spare_equipment {
         player
             .spare_equipment
-            .add_weapon(api.get_weapon(&equipment));
+            .add_weapon(api.get_weapon(&equipment).as_ref());
         player
             .spare_equipment
-            .add_equipment(api.get_item(&equipment));
+            .add_equipment(api.get_item(&equipment).as_ref());
     }
 
     let monster = api.get_monster(&parsed_file.monster_name)?;
@@ -127,9 +127,11 @@ fn load_player(
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Loading store..");
     let api: store::FileStore = store::Store::connect("osrsbox-db");
+    
 
     println!("Store loaded..");
     if let Some((player, monster)) = load_player("./loadout.json", &api) {
+        //println!("Attack styles: {:#?}", simulation::run_attack_styles(&player, &monster));
         let better = simulation::run(player, &monster);
         println!("Better player: {:#?}", better);
     } else {
