@@ -97,14 +97,14 @@ pub struct Gear {
 #[derive(Debug, Clone)]
 pub struct SpareGear {
     pub spare_weapons: Vec<Weapon>,
-    pub spare_equipment: Vec<Equipment>,
+    pub equipment: Vec<Equipment>,
 }
 
 impl SpareGear {
     pub fn new() -> Self {
         SpareGear {
             spare_weapons: Vec::new(),
-            spare_equipment: Vec::new(),
+            equipment: Vec::new(),
         }
     }
 
@@ -116,7 +116,7 @@ impl SpareGear {
 
     pub fn add_equipment(&mut self, equipment: Option<&Equipment>) {
         if let Some(equipment) = equipment {
-            self.spare_equipment.push(equipment.clone());
+            self.equipment.push(equipment.clone());
         }
     }
 }
@@ -361,7 +361,7 @@ pub struct Player {
     strength_potion: StrengthPotion,
     strength_prayer: StrengthPrayer,
     pub gear: Gear,
-    pub spare_equipment: SpareGear,
+    pub equipment: SpareGear,
 }
 
 impl Player {
@@ -384,7 +384,7 @@ impl Player {
             strength_potion: strength_potion,
             strength_prayer: strength_prayer,
             gear: gear,
-            spare_equipment: SpareGear::new(),
+            equipment: SpareGear::new(),
         }
     }
 

@@ -104,7 +104,7 @@ impl GearSet {
 pub struct Simulation {
     gear: Gear,
     original_gear: Gear,
-    spare_equipment: SpareGear,
+    equipment: SpareGear,
     ammo: HashSet<Option<Equipment>>,
     body: HashSet<Option<Equipment>>,
     cape: HashSet<Option<Equipment>>,
@@ -120,7 +120,7 @@ pub struct Simulation {
 }
 
 impl Simulation {
-    pub fn new(gear: &Gear, spare_equipment: &SpareGear) -> Self {
+    pub fn new(gear: &Gear, equipment: &SpareGear) -> Self {
         let mut eqs = HashSet::new();
         let mut wep = HashSet::new();
         eqs.insert(None);
@@ -129,7 +129,7 @@ impl Simulation {
         Simulation {
             gear: gear.clone(),
             original_gear: gear.clone(),
-            spare_equipment: spare_equipment.clone(),
+            equipment: equipment.clone(),
             ammo: eqs.clone(),
             body: eqs.clone(),
             cape: eqs.clone(),
@@ -174,7 +174,7 @@ impl Simulation {
             };
         }
 
-        for v in &self.spare_equipment.spare_weapons {
+        for v in &self.equipment.spare_weapons {
             match &v.equipment.slot {
                 EquipmentSlot::WEAPON => self.weapon.insert(Some(v.clone())),
                 EquipmentSlot::TWOHAND => self.twohand.insert(Some(v.clone())),
@@ -182,7 +182,7 @@ impl Simulation {
             };
         }
 
-        for v in &self.spare_equipment.spare_equipment {
+        for v in &self.equipment.equipment {
             match &v.equipment.slot {
                 EquipmentSlot::AMMO => self.ammo.insert(Some(v.clone())),
                 EquipmentSlot::BODY => self.body.insert(Some(v.clone())),
@@ -307,7 +307,7 @@ pub fn run(
     player: Player,
     monster: &Monster,
 ) -> ((f64, (AttackStyle, AttackType), isize, isize), GearSet) {
-    let mut sim = Simulation::new(&player.gear, &player.spare_equipment);
+    let mut sim = Simulation::new(&player.gear, &player.equipment);
     sim.init();
     let gear = sim.get_gear_combinations();
 
