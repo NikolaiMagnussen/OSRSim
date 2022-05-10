@@ -3,8 +3,9 @@ use serde::Deserialize;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufReader, Error, ErrorKind};
+use tracing::{debug, info, instrument};
 
-pub trait Store {
+pub trait Store: std::fmt::Debug {
     fn connect(path: &str) -> Self;
     fn get_weapon(&self, name: &str) -> Option<Weapon>;
     fn get_item(&self, name: &str) -> Option<Equipment>;
@@ -24,6 +25,7 @@ struct Response<T> {
     _items: Vec<T>,
 }
 
+#[derive(Debug)]
 pub struct ApiStore {
     path: String,
 }
@@ -93,14 +95,23 @@ impl ApiStore {
     }
 }
 
+impl std::fmt::Debug for FileStore {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "FileStore({})", self.path)
+    }
+}
+
 impl Store for FileStore {
+    #[instrument]
     fn connect(path: &str) -> Self {
         // Read and parse complete item file
+        debug!("starting to connect");
         let file =
             File::open(format!("{}/items-complete.json", path)).expect("Unable to open items file");
         let reader = BufReader::new(file);
         let all_items: HashMap<String, serde_json::Value> =
             serde_json::from_reader(reader).expect("Unable to parse file");
+        debug!("parsed data");
 
         // Split item file into weapon and (equipable) items
         let mut weapons = HashMap::new();
@@ -145,15 +156,21 @@ impl Store for FileStore {
         }
     }
 
+    #[instrument]
     fn get_weapon(&self, name: &str) -> Option<Weapon> {
+        debug!("getting weapon");
         self.weapons.get(name).cloned()
     }
 
+    #[instrument]
     fn get_item(&self, name: &str) -> Option<Equipment> {
+        debug!("getting item");
         self.items.get(name).cloned()
     }
 
+    #[instrument]
     fn get_monster(&self, name: &str) -> Option<Monster> {
+        debug!("getting monster");
         self.monsters.get(name).cloned()
     }
 }

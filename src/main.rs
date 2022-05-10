@@ -1,5 +1,5 @@
 use serde::Deserialize;
-use tracing::{info, span, Level, error, warn};
+use tracing::{error, info, instrument, span, warn, Level};
 use tracing_subscriber;
 
 use std::fs::File;
@@ -44,11 +44,11 @@ fn load_player(
     );
 
     // Parse all equipment
-    for eq in &parsed_file.equipment{
-        let weapon= api.get_weapon(&eq);
+    for eq in &parsed_file.equipment {
+        let weapon = api.get_weapon(&eq);
         let item = api.get_item(&eq);
 
-	// Add armour and weapons, but warn if equipment was not matched.
+        // Add armour and weapons, but warn if equipment was not matched.
         match (&weapon, &item) {
             (None, None) => warn!("Warning: {} was not matched :(", eq),
             (Some(_), None) => player.equipment.add_weapon(weapon.as_ref()),
@@ -76,7 +76,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     info!("Store loaded..");
     if let Some((player, monster)) = load_player("./loadout.json", &api) {
-        info!("Attack styles: {:#?}", simulation::run_attack_styles(&player, &monster));
+        info!(
+            "Attack styles: {:#?}",
+            simulation::run_attack_styles(&player, &monster)
+        );
         let better = simulation::run(player, &monster);
         info!("Better player: {:#?}", better);
     } else {
